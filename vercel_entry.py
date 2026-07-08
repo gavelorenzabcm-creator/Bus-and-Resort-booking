@@ -1,16 +1,27 @@
 """Vercel entrypoint (single process) for BusResort.
 
-Vercel expects a single Python entry file exporting WSGI-compatible handler.
-This project normally runs TWO Flask apps (main + admin) via run.py.
+Vercel expects a single Python entry file exporting a WSGI-compatible handler
+named `app`.
 
-To deploy on Vercel with a single handler, we mount the admin app under /admin
-and keep the main app at /. This yields one deployable application.
+This repo contains TWO independent Flask apps:
+  - main_site.app  (customer website)
+  - admin_site.admin_app  (admin dashboard)
+
+The admin app defines *absolute* routes like:
+  - /admin
+  - /admin/login
+  - /dashboard
+  - /admin/...
+
+Therefore, we must not mount the admin app under a prefix (e.g. /admin) because
+that shifts route rules and causes 404s.
+
+Instead, we dispatch requests to the correct Flask app based on PATH_INFO.
 """
 
 import os
 import sys
 
-# Ensure project root is importable
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
@@ -18,46 +29,37 @@ from main_site.app import app as main_app  # noqa: E402
 from admin_site.admin_app import app as admin_app  # noqa: E402
 
 
-def _create_mounted_app():
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+def _create_dispatched_app():
+    """Return a WSGI application that routes to main_app or admin_app.
 
-    # We mount by forwarding /admin/* to admin_app.
-    # Admin app already defines its routes under /admin/... and also has / and /admin/login.
-    # We mount admin_app at /admin to avoid exposing its root.
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-    from werkzeug.wsgi import ClosingIterator
+    Dispatch rules:
+      - /admin* and /dashboard* -> admin_app
+      - everything else -> main_app
 
-    main_app_wrapped = main_app
+    This keeps URLs intact for both apps.
+    """
 
-    # Remove admin_app root route responsiveness by mounting admin at /admin.
-    # Routes like /admin/... are already prefixed; mounting at /admin will make them /admin/admin/...
-    # However, your admin_app also defines routes like / (redirects to admin_login).
-    # To keep URLs correct, we mount admin_app at /admin and also strip the extra prefix.
-    # Simpler: mount admin_app at / (root) but route selection is done via Dispatcher.
-    # We'll mount admin_app at /admin and additionally add a fallback so /admin/* works.
+    def app(environ, start_response):
+        path = environ.get("PATH_INFO", "") or ""
 
-    # Best mapping: mount admin_app at /admin and also change admin_app's idea of URL.
-    # Since we can't easily rewrite all route rules, we mount admin_app at /admin and keep
-    # its internal routes as-is. Your admin_app uses /admin/... paths already.
-    # That means accessing /admin/dashboard (in browser) would hit admin_app rule /admin/dashboard
-    # only if admin_app sees SCRIPT_NAME='/admin'. Mounting at /admin makes that true.
+        # Admin routes
+        if path == "/dashboard" or path.startswith("/dashboard/"):
+            return admin_app.wsgi_app(environ, start_response)
 
-    # Mount admin_app at root.
-    # admin_app already defines admin URLs as absolute routes:
-    #   /admin (login), /dashboard (admin dashboard), /admin/... (all admin endpoints)
-    # Mounting it under /admin would shift routes to /admin/admin/... and commonly cause
-    # /dashboard to 404 on Vercel.
-    application = DispatcherMiddleware(
-        main_app_wrapped,
-        {
-            "/": admin_app,
-        },
-    )
+        if path == "/admin" or path.startswith("/admin/"):
+            return admin_app.wsgi_app(environ, start_response)
 
+        # Admin login sometimes uses /admin (handled above). If there are other
+        # admin-entry routes, keep them on the admin app too.
+        if path.startswith("/admin"):
+            return admin_app.wsgi_app(environ, start_response)
 
-    return application
+        # Customer site
+        return main_app.wsgi_app(environ, start_response)
+
+    return app
 
 
 # Vercel looks for `app` or `handler`
-app = _create_mounted_app()
+app = _create_dispatched_app()
 
