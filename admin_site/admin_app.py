@@ -554,9 +554,18 @@ def dashboard():
 
         exclusive_price = _get_exclusive_price(conn)
 
-        unread_count, notifications = get_notifications(conn)
-        
+        # Notification retrieval can fail if DB is partially initialized on Vercel.
+        # Root-cause: real exception should be fixed upstream, but we must not
+        # crash the entire dashboard when Notification table/columns are missing.
+        # If Notification is absent, we fall back to safe defaults.
+        try:
+            unread_count, notifications = get_notifications(conn)
+        except Exception as notif_exc:
+            logger.error("Dashboard notification load failed (non-fatal): %s", notif_exc, exc_info=True)
+            unread_count, notifications = 0, []
+
         # Summary stats (ACTIVE/VALID only; never include Cancelled)
+
         # Active statuses: Pending + Confirmed
         active_bus = conn.execute(
             "SELECT COUNT(*) as cnt FROM BusBookings WHERE status IN ('Pending','Confirmed')"

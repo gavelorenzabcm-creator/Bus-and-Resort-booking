@@ -8,18 +8,46 @@ from db_path import DB_PATH, ensure_db_initialized
 
 def get_db_connection(timeout=30.0):
     """Return sqlite3 connection with row_factory and timeout.
-    
+
+    In Vercel/production the DB file may exist but the schema may not be
+    initialized yet (because init_db() previously only ran under __main__).
+
+    This function guarantees the schema exists by calling init_db() exactly
+    once when a sentinel table is missing.
+
     Args:
         timeout: Maximum time (in seconds) to wait for a database lock to clear.
-                Default is 30 seconds to prevent indefinite hanging.
+                 Default is 30 seconds to prevent indefinite hanging.
     """
     ensure_db_initialized()
     conn = sqlite3.connect(DB_PATH, timeout=timeout)
     conn.row_factory = sqlite3.Row
+
     # Enable WAL mode for better concurrency
     conn.execute('PRAGMA journal_mode=WAL')
     # Set busy timeout in milliseconds
     conn.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
+
+    # Schema guard (idempotent) - only validate after we can connect.
+    # ResortBookings is used because the failing page is /resort.
+    try:
+        sentinel = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='ResortBookings'"
+        ).fetchone()
+        if sentinel is None:
+            # Import-free call: init_db() is defined below in this module.
+            init_db()
+            # Re-open connection after init_db(), since it closes its own conn.
+            conn.close()
+            conn = sqlite3.connect(DB_PATH, timeout=timeout)
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
+    except Exception:
+        # If the sentinel check itself fails, let the actual queries raise
+        # their real errors rather than masking them.
+        pass
+
     return conn
 
 def cancel_booking(conn, booking_type: str, booking_id: int, cancelled_by: str) -> dict:
