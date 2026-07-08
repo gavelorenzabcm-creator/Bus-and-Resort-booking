@@ -1,8 +1,10 @@
 """
 Database Module - All database operations in one place
 """
+from asyncio import timeout
 import sqlite3
-from config import DB_PATH, DB_TIMEOUT
+from config import DB_TIMEOUT
+from db_path import DB_PATH, ensure_db_initialized
 
 class Database:
     """Simple database wrapper with connection management"""
@@ -10,6 +12,7 @@ class Database:
     @staticmethod
     def get_connection():
         """Get database connection with proper settings"""
+        ensure_db_initialized()
         conn = sqlite3.connect(DB_PATH, timeout=DB_TIMEOUT)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA journal_mode=WAL')

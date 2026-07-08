@@ -25,6 +25,10 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
+from db_path import ensure_db_initialized
+
+ensure_db_initialized()
+
 from main_site.app import app as main_app  # noqa: E402
 from admin_site.admin_app import app as admin_app  # noqa: E402
 

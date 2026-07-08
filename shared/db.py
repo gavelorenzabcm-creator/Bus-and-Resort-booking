@@ -3,7 +3,8 @@ import sqlite3
 from datetime import datetime
 from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "bookings.db")
+from db_path import DB_PATH, ensure_db_initialized
+
 
 def get_db_connection(timeout=30.0):
     """Return sqlite3 connection with row_factory and timeout.
@@ -12,6 +13,7 @@ def get_db_connection(timeout=30.0):
         timeout: Maximum time (in seconds) to wait for a database lock to clear.
                 Default is 30 seconds to prevent indefinite hanging.
     """
+    ensure_db_initialized()
     conn = sqlite3.connect(DB_PATH, timeout=timeout)
     conn.row_factory = sqlite3.Row
     # Enable WAL mode for better concurrency
