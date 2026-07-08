@@ -7,7 +7,8 @@ import os
 # Base paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
-DB_PATH = os.path.join(BASE_DIR, 'bookings.db')
+from db_path import DB_PATH
+
 
 # Server settings
 MAIN_PORT = 5000
