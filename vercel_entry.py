@@ -19,6 +19,8 @@ from admin_site.admin_app import app as admin_app  # noqa: E402
 
 
 def _create_mounted_app():
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+
     # We mount by forwarding /admin/* to admin_app.
     # Admin app already defines its routes under /admin/... and also has / and /admin/login.
     # We mount admin_app at /admin to avoid exposing its root.
@@ -40,12 +42,18 @@ def _create_mounted_app():
     # That means accessing /admin/dashboard (in browser) would hit admin_app rule /admin/dashboard
     # only if admin_app sees SCRIPT_NAME='/admin'. Mounting at /admin makes that true.
 
+    # Mount admin_app at root.
+    # admin_app already defines admin URLs as absolute routes:
+    #   /admin (login), /dashboard (admin dashboard), /admin/... (all admin endpoints)
+    # Mounting it under /admin would shift routes to /admin/admin/... and commonly cause
+    # /dashboard to 404 on Vercel.
     application = DispatcherMiddleware(
         main_app_wrapped,
         {
-            "/admin": admin_app,
+            "/": admin_app,
         },
     )
+
 
     return application
 
