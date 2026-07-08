@@ -88,18 +88,11 @@ def _try_create_db_file(db_path: str) -> None:
 
 
 def ensure_db_initialized() -> None:
-    """Ensure DB directory/file exists and schema init runs before queries."""
-    # Make sure DB file can be opened.
+    """Ensure DB directory/file exists and schema init runs before queries.
+
+    Important: do NOT call shared.db.init_db() here, because shared.db.init_db()
+    calls get_db_connection(), which calls ensure_db_initialized() again.
+    That creates infinite recursion.
+    """
     _try_create_db_file(DB_PATH)
-
-    # Run schema initialization.
-    # We reuse existing init_db implementation from shared.db.
-    try:
-        from shared.db import init_db as _init_db
-
-        _init_db()
-    except Exception:
-        # If schema init fails for some reason, don't swallow it silently.
-        # But avoid hiding the root cause of directory/file creation.
-        raise
 

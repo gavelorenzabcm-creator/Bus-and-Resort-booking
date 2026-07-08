@@ -33,6 +33,10 @@ from main_site.app import app as main_app  # noqa: E402
 from admin_site.admin_app import app as admin_app  # noqa: E402
 
 
+# Vercel/Python expects a single exported WSGI callable named `app`.
+# Do not create multi-process server launchers here.
+
+
 def _create_dispatched_app():
     """Return a WSGI application that routes to main_app or admin_app.
 
