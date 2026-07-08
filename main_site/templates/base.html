@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_settings.site_name if site_settings else 'BusResort' }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: {
+                            500: '#2563EB',
+                            600: '#2563EB',
+                            700: '#1D4ED8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --surface: #ffffff;
+            --surface-alt: #f8fafc;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #2563eb;
+            --accent-soft: #dbeafe;
+            --shadow: 0 18px 60px rgba(15, 23, 42, 0.06);
+            --radius-xl: 1rem; /* ~16px */
+            --radius-2xl: 1.5rem; /* ~24px */
+        }
+
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .br-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .br-card-alt {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-2xl);
+        }
+
+        .br-input {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+        }
+
+        .br-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #ffffff;
+            border: 1px solid transparent;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--surface-alt);
+        }
+
+        .br-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background-color: var(--bg);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(6px);
+        }
+
+        .br-nav-link {
+            color: var(--muted);
+            transition: all 0.2s ease;
+        }
+
+        .br-nav-link:hover {
+            background-color: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .br-nav-link.active {
+            color: var(--accent);
+            background-color: var(--accent-soft);
+            font-weight: 700;
+        }
+
+        /* Responsive images that do NOT crop */
+        .br-img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            object-position: center;
+            border-radius: var(--radius-xl);
+            display: block;
+        }
+
+        .br-img-contain {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+        }
+
+
+        .br-footer {
+            background-color: var(--bg);
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    {% set path = request.path if request else '' %}
+    <nav class="br-header">
+        <div class="mx-auto max-w-7xl px-4">
+            <div class="flex h-16 items-center justify-between">
+                <a href="/" class="flex items-center gap-3">
+                    <div class="h-11 w-11 rounded-3xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl shadow-sm">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <div class="leading-tight">
+                        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">BusResort</p>
+                        <p class="text-lg font-semibold">{{ site_settings.site_name if site_settings else 'BusResort' }}</p>
+                    </div>
+                </a>
+
+                <div class="hidden md:flex items-center gap-2">
+                    <a href="/" class="br-nav-link rounded-full px-4 py-2 {% if path == '/' %}active{% endif %}">Home</a>
+                    <a href="/bus" class="br-nav-link rounded-full px-4 py-2 {% if '/bus' in path %}active{% endif %}">Bus Rental</a>
+                    <a href="/resort" class="br-nav-link rounded-full px-4 py-2 {% if '/resort' in path %}active{% endif %}">Resort</a>
+                    <a href="/feedback" class="br-nav-link rounded-full px-4 py-2 {% if '/feedback' in path %}active{% endif %}">Feedback</a>
+                </div>
+
+                <button id="mobile-menu-toggle" class="md:hidden inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm" aria-label="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="md:hidden hidden border-t border-slate-200 bg-white">
+            <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-1">
+                <a href="/" class="br-nav-link rounded-2xl px-4 py-3 {% if path == '/' %}active{% endif %}">Home</a>
+                <a href="/bus" class="br-nav-link rounded-2xl px-4 py-3 {% if '/bus' in path %}active{% endif %}">Bus Rental</a>
+                <a href="/resort" class="br-nav-link rounded-2xl px-4 py-3 {% if '/resort' in path %}active{% endif %}">Resort</a>
+                <a href="/feedback" class="br-nav-link rounded-2xl px-4 py-3 {% if '/feedback' in path %}active{% endif %}">Feedback</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="mx-auto max-w-7xl px-4 py-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="space-y-3 mb-6">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-800 flex items-center gap-3">
+                            <i class="fas {{ 'fa-check-circle text-emerald-600' if category == 'success' else 'fa-exclamation-circle text-rose-600' if category == 'error' else 'fa-info-circle text-sky-600' }}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+        <footer class="br-footer mt-16">
+            <div class="mx-auto max-w-7xl px-4 py-10">
+                <div class="grid gap-8 md:grid-cols-3">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <div class="h-11 w-11 rounded-3xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl shadow-sm">
+                                <i class="fas fa-bus"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold">{{ site_settings.site_name if site_settings else 'BusResort' }}</p>
+                                <p class="text-xs text-slate-500">Bus & Resort Booking</p>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-sm text-slate-600">Reliable mini bus rentals and comfortable resort stays—book in minutes.</p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Quick Links</h3>
+                        {% set quick_links = [] %}
+                        {% if cms_footer_content and cms_footer_content.quick_links_json %}
+                            {% set quick_links = cms_footer_content.quick_links_json|tojson %}
+                        {% endif %}
+                        <ul class="mt-4 space-y-2 text-sm">
+                            {# Stored as JSON text; if parsing isn’t available in Jinja, fall back gracefully #}
+                            {% if cms_footer_content and cms_footer_content.quick_links_json %}
+                                {% for item in cms_footer_content.quick_links_json if false %}{% endfor %}
+                            {% endif %}
+                            <li><a class="text-slate-600 hover:text-sky-700 transition" href="/bus">Book Mini Bus</a></li>
+                            <li><a class="text-slate-600 hover:text-sky-700 transition" href="/resort">Book Resort</a></li>
+                            <li><a class="text-slate-600 hover:text-sky-700 transition" href="/feedback">Feedback</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">{{ cms_footer_content.contact_section_title if cms_footer_content and cms_footer_content.contact_section_title else 'Contact Information' }}</h3>
+                        <div class="mt-4 space-y-2 text-sm text-slate-600">
+                            {% set c = cms_contact_info %}
+                            {% if c and c.email %}
+                                <p class="flex items-center gap-2"><i class="fas fa-envelope text-sky-700"></i> {{ c.email }}</p>
+                            {% elif site_settings and site_settings.contact_email %}
+                                <p class="flex items-center gap-2"><i class="fas fa-envelope text-sky-700"></i> {{ site_settings.contact_email }}</p>
+                            {% endif %}
+
+                            {% if c and (c.phone or c.secondary_phone) %}
+                                <p class="flex items-center gap-2">
+                                    <i class="fas fa-phone text-sky-700"></i>
+                                    {% if c.phone %}{{ c.phone }}{% endif %}
+                                    {% if c.phone and c.secondary_phone %} / {% endif %}
+                                    {% if c.secondary_phone %}{{ c.secondary_phone }}{% endif %}
+                                </p>
+                            {% elif site_settings and site_settings.contact_phone %}
+                                <p class="flex items-center gap-2"><i class="fas fa-phone text-sky-700"></i> {{ site_settings.contact_phone }}</p>
+                            {% endif %}
+
+                            {% if c and c.mobile %}
+                                <p class="flex items-center gap-2"><i class="fas fa-mobile-alt text-sky-700"></i> {{ c.mobile }}</p>
+                            {% endif %}
+
+                            {% if c and c.office_address %}
+                                <p class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-sky-700"></i> {{ c.office_address }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-4 flex items-center gap-3">
+                            {% for s in cms_social_links %}
+                                {% if s.href %}
+                                    {% if s.platform == 'facebook' %}
+                                        <a href="{{ s.href }}" target="_blank" rel="noopener" class="h-10 w-10 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                                    {% elif s.platform == 'x' %}
+                                        <a href="{{ s.href }}" target="_blank" rel="noopener" class="h-10 w-10 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition" aria-label="X"><i class="fab fa-twitter"></i></a>
+                                    {% elif s.platform == 'instagram' %}
+                                        <a href="{{ s.href }}" target="_blank" rel="noopener" class="h-10 w-10 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                                    {% elif s.platform == 'tiktok' %}
+                                        <a href="{{ s.href }}" target="_blank" rel="noopener" class="h-10 w-10 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                                    {% elif s.platform == 'youtube' %}
+                                        <a href="{{ s.href }}" target="_blank" rel="noopener" class="h-10 w-10 rounded-2xl border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 transition" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-10 border-t border-slate-200 pt-6 text-center text-sm text-slate-600">
+                    &copy; {{ now.year if now else 2025 }} {{ site_settings.site_name if site_settings else 'BusResort' }}. All rights reserved.
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        (function(){
+            const toggle = document.getElementById('mobile-menu-toggle');
+            const menu = document.getElementById('mobile-menu');
+            if(!toggle || !menu) return;
+            toggle.addEventListener('click', function(){
+                menu.classList.toggle('hidden');
+            });
+        })();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+
+

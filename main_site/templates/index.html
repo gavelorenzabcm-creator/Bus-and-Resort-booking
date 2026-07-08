@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Home - {{ site_settings.site_name if site_settings else 'BusResort' }}{% endblock %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-8">
+    <div>
+        <h1 class="text-5xl font-bold text-black mb-6">{{ site_settings.homepage_welcome if site_settings else 'Welcome to BusResort' }}</h1>
+        <p class="text-xl text-gray-600 mb-8">{{ site_settings.homepage_description if site_settings else 'Book Mini Bus rentals and cozy resort stays seamlessly.' }}</p>
+<div class="space-y-4 mb-8">
+            <a href="/bus" class="group block bg-blue-600 text-white py-4 px-6 rounded-xl text-center hover:bg-blue-700 font-semibold text-lg shadow-sm transform transition-all duration-200 hover:scale-105 hover:shadow-sm flex items-center justify-center gap-3">
+                <i class="fas fa-bus text-xl"></i>
+                Book Mini Bus
+            </a>
+            <a href="/resort" class="group block bg-blue-600 text-white py-4 px-6 rounded-xl text-center hover:bg-blue-700 font-semibold text-lg shadow-sm transform transition-all duration-200 hover:scale-105 hover:shadow-sm flex items-center justify-center gap-3">
+                <i class="fas fa-bed text-xl"></i>
+                Book Resort
+            </a>
+        </div>
+        
+<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+            <h2 class="text-3xl font-bold text-center mb-8 text-black">🔍 Check Your Booking</h2>
+            <form method="POST" class="sm:max-w-md mx-auto space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-black mb-2">Full Name *</label>
+                    <input type="text" name="full_name" value="{{ full_name }}" required class="w-full p-4 border border-gray-300 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ring-offset-2 ring-offset-white text-base placeholder-gray-500 transition-all duration-200" placeholder="Enter full name">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-black mb-2">Phone (optional)</label>
+                    <input type="tel" name="phone" value="{{ phone }}" class="w-full p-4 border border-gray-300 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ring-offset-2 ring-offset-white text-base placeholder-gray-500 transition-all duration-200" placeholder="09xxxxxxxxx">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-4 px-8 rounded-xl hover:bg-blue-700 font-semibold text-lg shadow-sm transform transition-all duration-200 hover:scale-105 hover:shadow-sm flex items-center justify-center gap-2">
+                    <i class="fas fa-search"></i>
+                    🔍 Search Bookings
+                </button>
+            </form>
+            
+            {% if full_name %}
+                {% if bookings %}
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold mb-4 text-black">{{ bookings|length }} booking{{ 's' if bookings|length != 1 else '' }} found:</h3>
+                    <div class="overflow-x-auto bg-white rounded-xl shadow-sm border">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-4 text-left font-semibold text-black">ID</th>
+                                    <th class="p-4 text-left font-semibold text-black">Type</th>
+                                    <th class="p-4 text-left font-semibold text-black">Details</th>
+                                    <th class="p-4 text-left font-semibold text-black">Dates</th>
+                                    <th class="p-4 text-left font-semibold text-black">Price</th>
+                                    <th class="p-4 text-left font-semibold text-black">Status</th>
+                                    <th class="p-4 text-left font-semibold text-black">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for b in bookings %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-4 font-mono font-bold text-sm bg-gray-100 rounded">{{ b.id }}</td>
+                                    <td class="p-4">
+                                        <span class="inline-flex px-2 py-1 text-xs font-bold rounded-full 
+                                            {{ 'bg-gray-100 text-black' if b.type == 'bus' }}
+                                            {{ 'bg-gray-100 text-black' if b.type == 'resort' }}">
+                                            {{ b.type|title }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-medium">{{ b.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ b.email }}</div>
+                                        <div class="text-xs text-gray-500">{{ b.contact }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        {% if b.type == 'bus' %}
+                                            {{ b.datetime }} → {{ b.checkout or b.datetime }}
+                                        {% else %}
+                                            {{ b.checkin }} → {{ b.checkout }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-4 font-semibold text-lg">₱{{ '{:,.0f}'.format(b.price or 0) }}</td>
+                                    <td class="p-4">
+                                        <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full 
+                                            {{ 'bg-gray-100 text-black' if b.status == 'Confirmed' }}
+                                            {{ 'bg-gray-100 text-black' if b.status == 'Pending' }}
+                                            {{ 'bg-gray-100 text-black' if b.status == 'Cancelled' else 'bg-gray-100 text-black' }}">
+                                            {{ b.status }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4">
+                                        {% if b.status == 'Pending' and (b.price or 0) > 0 %}
+                                        <div class="flex flex-col gap-2">
+                                            <form method="POST" action="/{{ b.type }}/respond/{{ b.id }}">
+                                                <input type="hidden" name="full_name" value="{{ full_name }}">
+                                                <input type="hidden" name="phone" value="{{ phone }}">
+                                                <input type="hidden" name="decision" value="confirm">
+                                                <button type="submit" class="w-full bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs font-semibold">Confirm Price</button>
+                                            </form>
+                                            <form method="POST" action="/{{ b.type }}/respond/{{ b.id }}">
+                                                <input type="hidden" name="full_name" value="{{ full_name }}">
+                                                <input type="hidden" name="phone" value="{{ phone }}">
+                                                <input type="hidden" name="decision" value="cancel">
+                                                <button type="submit" class="w-full bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs font-semibold">Cancel Booking</button>
+                                            </form>
+                                        </div>
+                                        {% elif b.status == 'Pending' and (b.price or 0) <= 0 %}
+                                            <span class="text-xs text-gray-500">Waiting for admin price</span>
+                                        {% else %}
+                                            <span class="text-xs text-gray-400">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-8 p-12 text-center bg-gray-50 border-2 border-gray-200 rounded-xl">
+                    <i class="fas fa-search text-5xl text-gray-500 mb-6"></i>
+                    <h3 class="text-2xl font-bold text-black mb-2">No bookings found</h3>
+                    <p class="text-lg text-gray-600">No bookings found for "<strong>{{ full_name }}</strong>"{{ ' (' + phone + ')' if phone else '' }}.</p>
+                    <p class="text-sm text-gray-500 mt-2">Please check your spelling or contact us if you believe this is an error.</p>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+<div class="grid grid-cols-1 gap-4">
+        {% if site_settings and site_settings.homepage_image %}
+            <img src="/uploads/{{ site_settings.homepage_image.split('/')[-1] if site_settings.homepage_image.startswith('uploads/') else site_settings.homepage_image }}" alt="Mini Bus" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy">
+
+        {% else %}
+            <img src="/uploads/BUS.jpg" alt="Mini Bus" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy" onerror="this.style.display='none'">
+        {% endif %}
+
+        
+        {% if site_settings and site_settings.resort_image %}
+            <img src="/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}" alt="Resort" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy">
+
+        {% else %}
+            <img src="/uploads/MBR.jpg" alt="Resort" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy" onerror="this.style.display='none'">
+        {% endif %}
+
+    </div>
+</div>
+<div class="mt-16 p-8 bg-white rounded-2xl shadow-sm">
+    <h2 class="text-3xl font-bold text-center mb-8">Why Choose Us?</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+            <i class="fas fa-bus text-4xl text-black mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Mini Bus Only</h3>
+            <p>Reliable mini bus transportation for groups.</p>
+        </div>
+        <div class="text-center">
+            <i class="fas fa-bed text-4xl text-black mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Luxury Resorts</h3>
+            <p>Comfortable rooms with amenities.</p>
+        </div>
+        <div class="text-center">
+            <i class="fas fa-user-check text-4xl text-black mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Easy Management</h3>
+            <p>Admin dashboard for quick confirmations.</p>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

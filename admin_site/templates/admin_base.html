@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin - BusResort{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3f6fb;
+            --surface: #ffffff;
+            --surface-alt: #f8fafc;
+            --surface-strong: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --accent: #2563eb;
+            --accent-soft: #dbeafe;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100%;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: Inter, Poppins, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        img, video, iframe, svg, canvas, table {
+            max-width: 100%;
+            height: auto;
+        }
+        input, select, textarea, button {
+            max-width: 100%;
+        }
+        .admin-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1.5rem;
+            box-shadow: 0 18px 60px rgba(15, 23, 42, 0.06);
+            overflow: hidden;
+        }
+        .admin-card-alt {
+            background-color: var(--surface);
+            border: 1px solid var(--surface-strong);
+            border-radius: 1.5rem;
+        }
+        .admin-sidebar {
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 18rem;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 40;
+            box-shadow: 6px 0 30px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        .admin-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .admin-sidebar::-webkit-scrollbar-thumb {
+            background-color: rgba(100, 116, 139, 0.3);
+            border-radius: 9999px;
+        }
+        .admin-sidebar a {
+            color: var(--muted);
+            transition: all 0.2s ease;
+        }
+        .admin-sidebar a:hover {
+            background-color: var(--accent-soft);
+            color: var(--accent);
+        }
+        .admin-sidebar a.active {
+            color: var(--accent);
+            background-color: var(--accent-soft);
+            font-weight: 600;
+        }
+        .admin-sidebar .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border);
+            padding: 1.5rem;
+            background-color: var(--surface-alt);
+        }
+        .admin-main-wrapper {
+            margin-left: 18rem;
+            min-height: 100vh;
+        }
+        .admin-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+        .admin-main {
+            min-height: calc(100vh - 5.5rem);
+            width: 100%;
+        }
+        .admin-input {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .admin-input:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+        }
+        .admin-input::placeholder {
+            color: var(--muted);
+        }
+        .btn-primary {
+            background-color: var(--accent);
+            color: #ffffff;
+            border: 1px solid transparent;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            background-color: var(--surface-alt);
+        }
+        .btn-muted {
+            background-color: var(--surface-alt);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-muted:hover {
+            background-color: #e2e8f0;
+        }
+        .btn-danger {
+            background-color: var(--danger);
+            color: #ffffff;
+            border: 1px solid transparent;
+        }
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            padding: 0.5rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+        .flash-message {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .admin-footer {
+            background-color: var(--bg);
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+        }
+        .calendar-container {
+            min-height: 360px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .calendar-container .fc {
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .calendar-container .fc-scrollgrid {
+            min-width: 0 !important;
+        }
+        .profile-dropdown {
+            display: none;
+            min-width: 12rem;
+        }
+        .profile-dropdown.open {
+            display: block;
+        }
+
+        /* Notification dropdown animation + positioning */
+        #notification-dropdown.open {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+        #notification-dropdown.hidden {
+            opacity: 0;
+            transform: translateY(-4px) scale(0.98);
+            pointer-events: none;
+        }
+
+        .sticky-panel {
+            position: sticky;
+            top: 1rem;
+        }
+        @media (max-width: 1280px) {
+            .admin-sidebar {
+                width: 16rem;
+            }
+            .admin-main-wrapper {
+                margin-left: 16rem;
+            }
+        }
+        @media (max-width: 1024px) {
+            /* ensure main content never hides behind the mobile sidebar */
+            #main-content { position: relative; z-index: 10; }
+            .admin-header { z-index: 30; }
+            .admin-sidebar { z-index: 60; }
+            .admin-sidebar {
+                left: -100%;
+                position: fixed;
+                width: 18rem;
+                transition: left 0.3s ease;
+            }
+            .admin-sidebar.open {
+                left: 0;
+            }
+            .admin-main-wrapper {
+                margin-left: 0;
+            }
+            .mobile-hide {
+                display: none!important;
+            }
+        }
+        @media (max-width: 640px) {
+            /* keep dropdowns fully visible */
+            #notification-dropdown, #profile-dropdown { max-width: calc(100vw - 2rem); }
+            #notification-dropdown { right: 0; }
+            #profile-dropdown { right: 0; }
+            
+            .search-panel {
+                display: none;
+            }
+            .profile-name {
+                display: none;
+            }
+            .admin-sidebar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+    {% set show_admin_shell = session.get('admin_id') and request.path not in ['/admin', '/admin/'] %}
+    {% if show_admin_shell %}
+    <aside class="admin-sidebar" id="sidebar">
+        <div class="px-6 py-6 border-b border-slate-200">
+            <a href="/dashboard" class="flex items-center gap-3">
+                <div class="h-12 w-12 rounded-3xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl shadow-sm">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">BusResort</p>
+                    <p class="text-lg font-semibold text-slate-900">Admin</p>
+                </div>
+            </a>
+        </div>
+        <div class="px-4 py-5 space-y-1">
+            <a href="/dashboard" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if request.path == '/dashboard' %}active{% endif %}">
+                <i class="fas fa-gauge w-5 text-base"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/admin/requests/bus" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/requests/bus' in request.path %}active{% endif %}">
+                <i class="fas fa-bus w-5 text-base"></i>
+                <span>Bus Bookings</span>
+            </a>
+            <a href="/admin/requests/resort" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/requests/resort' in request.path %}active{% endif %}">
+                <i class="fas fa-bed w-5 text-base"></i>
+                <span>Resort Bookings</span>
+            </a>
+            <a href="/admin/feedback" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/feedback' in request.path %}active{% endif %}">
+                <i class="fas fa-comments w-5 text-base"></i>
+                <span>Feedback</span>
+            </a>
+            <a href="/admin/sales" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/sales' in request.path %}active{% endif %}">
+                <i class="fas fa-chart-line w-5 text-base"></i>
+                <span>Sales Reports</span>
+            </a>
+            <a href="/admin/content" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/content' in request.path %}active{% endif %}">
+                <i class="fas fa-globe w-5 text-base"></i>
+                <span>Site Content</span>
+            </a>
+            <a href="/admin/settings" class="flex items-center gap-3 rounded-2xl px-4 py-3 {% if '/admin/settings' in request.path %}active{% endif %}">
+                <i class="fas fa-cog w-5 text-base"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+        <div class="sidebar-footer">
+            <div class="flex items-center gap-3">
+                <div class="h-11 w-11 rounded-3xl bg-slate-100 flex items-center justify-center text-slate-600">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-semibold text-slate-900">BusResort Admin</p>
+                    <p class="text-xs text-slate-500">Version 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="admin-main-wrapper">
+    <header class="admin-header">
+            <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-2">
+                    <p class="text-sm text-slate-500">Welcome back,</p>
+                    <h1 class="text-2xl font-semibold text-slate-900">BusResort Admin</h1>
+                </div>
+                <div class="flex flex-1 items-center gap-3">
+                    <div class="search-panel w-full max-w-xl">
+                        <label for="dashboard-search" class="sr-only">Search dashboard</label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400"><i class="fas fa-search"></i></span>
+                            <input id="dashboard-search" type="search" placeholder="Search bookings, rooms, reports..." class="w-full rounded-full border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100" />
+                        </div>
+                    </div>
+                    <button id="mobile-sidebar-toggle" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm md:hidden" aria-label="Open sidebar">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="relative" id="notification-bell-wrapper">
+                        <button id="notification-bell" type="button" class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm">
+                            <span class="sr-only">Notifications</span>
+                            <i class="fas fa-bell"></i>
+                            <span id="notification-badge" class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold text-white {% if (unread_count or 0) == 0 %}hidden{% endif %}">{{ unread_count or 0 }}</span>
+                        </button>
+
+                        <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-[340px] max-w-[calc(100vw-2rem)] z-50 origin-top-right rounded-[14px] bg-white border border-slate-200 shadow-[0_20px_60px_rgba(2,6,23,0.12)] overflow-hidden transform transition-all duration-200 ease-out opacity-0 translate-y-1 scale-95">
+                            <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-bell text-sky-600"></i>
+                                    <p class="font-semibold text-slate-900">Notifications</p>
+                                </div>
+                                <span id="dropdown-count" class="inline-flex items-center justify-center rounded-full bg-blue-50 text-blue-700 px-2 py-1 text-xs font-bold">{{ unread_count or 0 }}</span>
+                            </div>
+
+                            <div class="max-h-[340px] overflow-y-auto" id="notification-list">
+                                <div class="p-8 text-center text-gray-500">
+                                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                    <p class="text-sm font-medium">Loading...</p>
+                                </div>
+                            </div>
+
+                            <div class="p-3 border-t border-slate-200 bg-slate-50">
+                                <div class="flex items-center justify-between gap-2">
+                                    <button id="mark-all-read" type="button" class="btn-secondary px-3 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap">Mark all as read</button>
+                                    <a href="/dashboard" class="text-xs font-semibold text-sky-700 hover:text-sky-800">View all</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button id="profile-dropdown-trigger" class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100">
+                            <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-600">A</span>
+                            <span class="profile-name">{{ session.get('admin_username') or 'Admin' }}</span>
+                            <i class="fas fa-chevron-down text-slate-400"></i>
+                        </button>
+                        <div id="profile-dropdown" class="profile-dropdown absolute right-0 mt-2 w-48 rounded-3xl border border-slate-200 bg-white p-2 shadow-lg">
+                            <a href="/admin/settings" class="block rounded-2xl px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Settings</a>
+                            <form method="POST" action="/admin/logout" class="mt-2">
+                                <button type="submit" class="w-full rounded-2xl bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Sign out</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+    {% endif %}
+
+        <main class="p-4 md:p-5 min-w-0 w-full {% if show_admin_shell %}admin-main{% else %}flex-1 flex items-center justify-center{% endif %}" id="main-content">
+            <!-- Loading overlay for page transitions -->
+            <div id="page-loader" class="hidden fixed inset-0 bg-white bg-opacity-80 z-40 flex items-center justify-center" style="pointer-events:none;">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-3xl text-sky-600 mb-2"></i>
+                    <p class="text-slate-600">Loading...</p>
+                </div>
+            </div>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-3 mb-6">
+                        {% for category, message in messages %}
+                            <div class="flash-message p-4 rounded-lg">
+                                <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} mr-2"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    {% if show_admin_shell %}
+    </div>
+    <footer class="admin-footer py-4 text-center text-sm admin-main">
+        BusResort Admin System &copy; {{ now.year if now else '2025' }}
+    </footer>
+    {% endif %}
+
+    {% if show_admin_shell %}
+    <script src="/static/js/notifications.js"></script>
+    <script src="/static/js/page_loader.js"></script>
+    <script src="/static/js/cancellation.js"></script>
+    <script>
+    (function() {
+        'use strict';
+        
+        console.log('[Admin Panel] Initializing navigation...');
+        
+        // Mobile sidebar toggle
+        var toggle = document.getElementById('mobile-sidebar-toggle');
+        var sidebar = document.querySelector('.admin-sidebar');
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.classList.toggle('open');
+                console.log('[Admin Panel] Mobile sidebar toggled');
+            });
+            document.addEventListener('click', function(e) {
+                if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        }
+
+        // Profile dropdown toggle
+        var profileTrigger = document.getElementById('profile-dropdown-trigger');
+        var profileDropdown = document.getElementById('profile-dropdown');
+        if (profileTrigger && profileDropdown) {
+            profileTrigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('open');
+            });
+            document.addEventListener('click', function(e) {
+                if (profileDropdown.classList.contains('open') && !profileDropdown.contains(e.target) && !profileTrigger.contains(e.target)) {
+                    profileDropdown.classList.remove('open');
+                }
+            });
+        }
+
+        // Log successful page load
+        console.log('[Admin Panel] Page loaded: ' + window.location.pathname);
+        
+        // Reset any stuck loading states
+        document.body.style.cursor = 'default';
+        
+        // Mark page as fully loaded
+        window.adminPanelLoaded = true;
+        
+        // IMMEDIATE: Force hide any stuck loading overlays
+        (function clearStuckLoading() {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                loader.classList.add('hidden');
+                loader.style.display = 'none';
+            }
+            const overlay = document.getElementById('page-loader-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+            console.log('[Admin Panel] Loading state force-cleared');
+        })();
+    })();
+    </script>
+    {% endif %}
+    {% block scripts %}{% endblock %}
+</body>
+</html>

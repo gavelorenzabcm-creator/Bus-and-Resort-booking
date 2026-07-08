@@ -1,0 +1,68 @@
+{% extends "admin_base.html" %}
+{% block title %}Bus Requests - BusResort{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+    <h1 class="text-3xl font-bold text-black">Bus Booking Requests</h1>
+    <a href="/dashboard" class="text-black hover:text-black font-medium">← Back to Dashboard</a>
+</div>
+
+<div class="admin-card rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-black">
+            <thead class="admin-table-header">
+                <tr>
+                    <th class="p-3 text-left font-medium">Name</th>
+                    <th class="p-3 text-left font-medium">Contact</th>
+                    <th class="p-3 text-left font-medium">Email</th>
+                    <th class="p-3 text-left font-medium">Pickup</th>
+                    <th class="p-3 text-left font-medium">Destination</th>
+                    <th class="p-3 text-left font-medium">Date/Time</th>
+                    <th class="p-3 text-left font-medium">Status</th>
+                    <th class="p-3 text-left font-medium">Price</th>
+                    <th class="p-3 text-left font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if bus_bookings %}
+                    {% for b in bus_bookings %}
+                        <tr class="admin-table-row">
+                            <td class="p-3">{{ b.name }}</td>
+                            <td class="p-3">{{ b.contact }}</td>
+                            <td class="p-3">{{ b.email }}</td>
+                            <td class="p-3">{{ b.pickup }}</td>
+                            <td class="p-3">{{ b.destination }}</td>
+                            <td class="p-3">{{ b.checkin or b.datetime }} → {{ b.checkout or b.datetime }}</td>
+                            <td class="p-3">
+                                <span class="status-badge px-2 py-1 rounded-full text-xs font-medium">
+                                    {{ b.status }}
+                                </span>
+                            </td>
+                            <td class="p-3">PHP {{ '%.2f'|format(b.price or 0) }}</td>
+                            <td class="p-3">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    {% if b.status != 'Cancelled' %}
+                                    <form method="POST" action="/confirm/bus/{{ b.id }}">
+                                        <button type="submit" class="btn-muted px-3 py-1 rounded text-sm">Confirm</button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="/edit/bus/{{ b.id }}" class="btn-secondary px-3 py-1 rounded text-sm inline-block">Edit</a>
+                                    {% if b.status != 'Cancelled' %}
+<form method="POST" action="/cancel/bus/{{ b.id }}" class="cancel-bus-form" onsubmit="event.preventDefault();">
+                                        <button type="button" class="btn-danger px-3 py-1 rounded text-sm" data-cancel-booking data-cancel-url="/cancel/bus/{{ b.id }}" data-row-selector="tr.admin-table-row">Cancel</button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="POST" action="/delete/bus/{{ b.id }}" onsubmit="return confirm('Delete this bus booking?');">
+                                        <button type="submit" class="btn-danger px-3 py-1 rounded text-sm">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+<tr><td colspan="9" class="p-8 text-center text-gray-500">No bus requests yet.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

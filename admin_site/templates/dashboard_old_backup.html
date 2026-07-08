@@ -1,0 +1,264 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin Dashboard - BusResort{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<style>
+/* Ensure calendar containers are visible */
+#admin-bus-calendar, #admin-resort-calendar {
+    min-height: 400px;
+    height: auto;
+}
+.fc-view-harness {
+    min-height: 350px !important;
+}
+</style>
+
+<script>
+// Calendar initialization with comprehensive error handling
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Calendar] DOM ready, waiting for FullCalendar...');
+    // Wait for FullCalendar to be loaded
+    if (typeof FullCalendar === 'undefined') {
+        console.error('[Calendar] FullCalendar library not loaded!');
+        document.getElementById('admin-bus-calendar').innerHTML = 
+            '<div style="color:red;padding:20px;">Calendar library not loaded. Please refresh.</div>';
+        document.getElementById('admin-resort-calendar').innerHTML = 
+            '<div style="color:red;padding:20px;">Calendar library not loaded. Please refresh.</div>';
+        return;
+    }
+    setTimeout(initCalendars, 500);
+});
+
+async function initCalendars() {
+    const busEl = document.getElementById('admin-bus-calendar');
+    const resortEl = document.getElementById('admin-resort-calendar');
+    
+    if (!busEl || !resortEl) {
+        console.error('[Calendar] Containers not found:', {busEl, resortEl});
+        return;
+    }
+    
+    // Show loading state
+    const loadingHtml = '<div style="text-align:center;padding:50px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Loading bookings...</div>';
+    busEl.innerHTML = loadingHtml;
+    resortEl.innerHTML = loadingHtml;
+    
+    try {
+        console.log('[Calendar] Fetching events...');
+        const response = await fetch('/api/admin/calendar_events', {
+            headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle error response from API
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        const events = Array.isArray(data) ? data : (data.events || []);
+        console.log('[Calendar] Received', events.length, 'events');
+        
+        // Separate bus and resort events
+        const busEvents = events.filter(e => e.title && e.title.toLowerCase().startsWith('bus:'));
+        const resortEvents = events.filter(e => e.title && e.title.toLowerCase().startsWith('resort:'));
+        
+        console.log('[Calendar] Bus:', busEvents.length, 'Resort:', resortEvents.length);
+        
+        // Clear containers
+        busEl.innerHTML = '';
+        resortEl.innerHTML = '';
+        
+        // Initialize Bus Calendar
+        const busCalendar = new FullCalendar.Calendar(busEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: { 
+                left: 'prev,next today', 
+                center: 'title', 
+                right: 'dayGridMonth,listWeek' 
+            },
+            events: busEvents,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            displayEventTime: true,
+            displayEventEnd: true,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                }
+            },
+            noEventsContent: 'No bus bookings found'
+        });
+        
+        // Initialize Resort Calendar
+        const resortCalendar = new FullCalendar.Calendar(resortEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: { 
+                left: 'prev,next today', 
+                center: 'title', 
+                right: 'dayGridMonth,listWeek' 
+            },
+            events: resortEvents,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            displayEventTime: true,
+            displayEventEnd: true,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                }
+            },
+            noEventsContent: 'No resort bookings found'
+        });
+        
+        // Render calendars
+        busCalendar.render();
+        resortCalendar.render();
+        
+        // Update sizes after render (fixes visibility issues)
+        setTimeout(() => {
+            busCalendar.updateSize();
+            resortCalendar.updateSize();
+        }, 100);
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            busCalendar.updateSize();
+            resortCalendar.updateSize();
+        });
+        
+        console.log('[Calendar] Both calendars rendered successfully');
+        
+    } catch (err) {
+        console.error('[Calendar] Error:', err);
+        const errorHtml = `
+            <div style="color:red;padding:20px;text-align:center;">
+                <i class="fas fa-exclamation-triangle"></i><br>
+                <strong>Failed to load calendar</strong><br>
+                ${err.message}<br><br>
+                <button onclick="initCalendars()" style="padding:8px 16px;cursor:pointer;">
+                    <i class="fas fa-refresh"></i> Retry
+                </button>
+            </div>`;
+        busEl.innerHTML = errorHtml;
+        resortEl.innerHTML = errorHtml;
+    }
+}
+</script>
+
+{% block content %}
+    <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold text-black">Admin Dashboard</h1>
+        <div class="flex items-center gap-4">
+            <div class="text-sm text-gray-600">
+                Logged in as <span class="font-semibold text-black">{{ session.get('admin_username') }}</span>
+            </div>
+        </div>
+    </div>
+
+<div class="space-y-8">
+    <section class="admin-card p-6 rounded-2xl">
+        <h2 class="text-2xl font-semibold mb-4 text-black">Booking Requests</h2>
+        <div class="flex flex-wrap gap-3">
+            <a href="/admin/requests/bus" class="btn-primary px-4 py-2 rounded-lg font-medium">View Bus Bookings</a>
+            <a href="/admin/requests/resort" class="btn-secondary px-4 py-2 rounded-lg font-medium">View Resort Bookings</a>
+        </div>
+    </section>
+
+    <div class="grid md:grid-cols-2 gap-6">
+        <section class="admin-card p-6 rounded-2xl">
+            <h2 class="text-2xl font-semibold mb-4 text-black">Bus Bookings Calendar</h2>
+            <p class="text-sm text-gray-600 mb-4">Shows all bus bookings. Click an event to open edit page.</p>
+            <div id="admin-bus-calendar" class="calendar-container"></div>
+        </section>
+        <section class="admin-card p-6 rounded-2xl">
+            <h2 class="text-2xl font-semibold mb-4 text-black">Resort Bookings Calendar</h2>
+            <p class="text-sm text-gray-600 mb-4">Shows all resort bookings. Click an event to open edit page.</p>
+            <div id="admin-resort-calendar" class="calendar-container"></div>
+        </section>
+    </div>
+
+    <section class="admin-card p-6 rounded-2xl">
+        <h2 class="text-2xl font-semibold mb-4 text-black">Rentable Appliances Management</h2>
+        <form method="POST" action="/admin/appliances/add" class="grid md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-black mb-2">Appliance Name</label>
+                <input type="text" name="name" required class="admin-input w-full p-3 rounded-lg" placeholder="e.g. Refrigerator">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Rental Price (PHP)</label>
+                <input type="number" min="0" step="1" name="price" required class="admin-input w-full p-3 rounded-lg">
+            </div>
+            <div class="md:col-span-3">
+                <button type="submit" class="btn-primary w-full py-3 px-6 rounded-lg font-medium">Add / Update Appliance</button>
+            </div>
+        </form>
+
+        {% if appliances %}
+            <div class="mt-6 overflow-x-auto">
+                <table class="w-full text-sm text-black">
+                    <thead class="admin-table-header">
+                        <tr>
+                            <th class="p-3 text-left font-medium">Appliance</th>
+                            <th class="p-3 text-left font-medium">Price</th>
+                            <th class="p-3 text-left font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appliance in appliances %}
+                        <tr class="admin-table-row">
+                            <td class="p-3">
+                                <form method="POST" action="/admin/appliances/edit/{{ appliance.id }}" class="flex items-center gap-2">
+                                    <input type="text" name="name" value="{{ appliance.name }}" required class="admin-input w-48 p-2 rounded-lg">
+                            </td>
+                            <td class="p-3">
+                                    <input type="number" min="0" step="1" name="price" value="{{ appliance.price or 0 }}" required class="admin-input w-36 p-2 rounded-lg">
+                            </td>
+                            <td class="p-3">
+                                    <button type="submit" class="btn-muted px-3 py-1 rounded text-sm">Save</button>
+                                </form>
+                                <form method="POST" action="/admin/appliances/delete/{{ appliance.id }}" class="inline ml-2" onsubmit="return confirm('Delete {{ appliance.name }}?');">
+                                    <button type="submit" class="btn-danger px-3 py-1 rounded text-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-sm text-gray-600 mt-4">No appliances configured yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+function toggleAdminAddForm(formId, buttonId, label) {
+    const form = document.getElementById(formId);
+    const button = document.getElementById(buttonId);
+    if (!form || !button) return;
+    if (form.hasAttribute('hidden')) {
+        form.removeAttribute('hidden');
+        button.textContent = '- Hide Form';
+    } else {
+        form.setAttribute('hidden', 'hidden');
+        button.textContent = label;
+    }
+}
+</script>
+{% endblock %}

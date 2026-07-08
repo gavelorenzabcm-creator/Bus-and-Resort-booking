@@ -1,0 +1,66 @@
+<!-- Reusable Sales Filter Component -->
+<div class="admin-card p-5 rounded-2xl mb-6">
+    <form method="GET" action="{{ request.path }}" class="flex flex-wrap items-end gap-4">
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Report Period</label>
+            <select name="filter" id="filter-select" class="admin-input w-full px-3 py-2 rounded-lg text-sm">
+                <option value="" {% if not filter_type %}selected{% endif %}>All Time</option>
+                <option value="daily" {% if filter_type == 'daily' %}selected{% endif %}>Daily (Today)</option>
+                <option value="weekly" {% if filter_type == 'weekly' %}selected{% endif %}>Weekly (This Week)</option>
+                <option value="monthly" {% if filter_type == 'monthly' %}selected{% endif %}>Monthly (This Month)</option>
+                <option value="yearly" {% if filter_type == 'yearly' %}selected{% endif %}>Yearly (This Year)</option>
+                <option value="custom" {% if filter_type == 'custom' %}selected{% endif %}>Custom Date Range</option>
+            </select>
+        </div>
+
+        <div id="custom-date-fields" class="flex gap-3 {% if filter_type != 'custom' %}hidden{% endif %}">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input type="date" name="start_date" value="{{ start_date or '' }}" class="admin-input px-3 py-2 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input type="date" name="end_date" value="{{ end_date or '' }}" class="admin-input px-3 py-2 rounded-lg text-sm">
+            </div>
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium">
+                <i class="fas fa-filter mr-1"></i> Apply Filter
+            </button>
+            {% if filter_type %}
+            <a href="{{ request.path }}" class="btn-muted px-4 py-2 rounded-lg text-sm font-medium">
+                <i class="fas fa-times mr-1"></i> Reset
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if period_label %}
+    <div class="mt-3 flex items-center gap-2">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            <i class="fas fa-calendar-alt mr-1.5"></i>
+            Showing: {{ period_label }}
+        </span>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+(function() {
+    var select = document.getElementById('filter-select');
+    var customFields = document.getElementById('custom-date-fields');
+    function toggleCustom() {
+        if (select.value === 'custom') {
+            customFields.classList.remove('hidden');
+        } else {
+            customFields.classList.add('hidden');
+        }
+    }
+    if (select) {
+        select.addEventListener('change', toggleCustom);
+        toggleCustom();
+    }
+})();
+</script>
+

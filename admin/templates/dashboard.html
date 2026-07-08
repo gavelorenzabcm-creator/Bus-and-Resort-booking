@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-8">Dashboard</h1>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Total Bookings</div>
+        <div class="text-3xl font-bold">{{ stats.total_bookings }}</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Active Bookings</div>
+        <div class="text-3xl font-bold text-blue-600">{{ stats.active_bookings }}</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Total Revenue</div>
+        <div class="text-3xl font-bold text-green-600">₱{{ "%.2f"|format(stats.total_revenue) }}</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Bus / Resort</div>
+        <div class="text-3xl font-bold">{{ stats.total_bus }} / {{ stats.total_resort }}</div>
+    </div>
+</div>
+
+<!-- Recent Bookings -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Bus Bookings -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-semibold">Recent Bus Bookings</h2>
+        </div>
+        <div class="p-6">
+            {% if recent_bus %}
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-sm text-gray-500">
+                            <th class="pb-3">Name</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bus %}
+                        <tr class="border-t">
+                            <td class="py-3">{{ booking.name }}</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 rounded text-sm
+                                    {% if booking.status == 'Confirmed' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td class="py-3">₱{{ "%.2f"|format(booking.price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <a href="{{ url_for('bookings_bus') }}" class="text-blue-600 mt-4 inline-block">View all →</a>
+            {% else %}
+                <p class="text-gray-500">No bus bookings yet</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Resort Bookings -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-semibold">Recent Resort Bookings</h2>
+        </div>
+        <div class="p-6">
+            {% if recent_resort %}
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-sm text-gray-500">
+                            <th class="pb-3">Name</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_resort %}
+                        <tr class="border-t">
+                            <td class="py-3">{{ booking.name }}</td>
+                            <td class="py-3">
+                                <span class="px-2 py-1 rounded text-sm
+                                    {% if booking.status == 'Confirmed' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td class="py-3">₱{{ "%.2f"|format(booking.price) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <a href="{{ url_for('bookings_resort') }}" class="text-blue-600 mt-4 inline-block">View all →</a>
+            {% else %}
+                <p class="text-gray-500">No resort bookings yet</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Calendar Section -->
+<div class="mt-8">
+    <h2 class="text-2xl font-bold mb-4">Booking Calendar</h2>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Bus Calendar -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-4 bg-blue-50 border-b">
+                <h3 class="font-semibold text-blue-800"><i class="fas fa-bus mr-2"></i>Bus Bookings</h3>
+            </div>
+            <div class="p-4">
+                <div id="bus-calendar" class="min-h-[400px]"></div>
+            </div>
+        </div>
+        
+        <!-- Resort Calendar -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-4 bg-green-50 border-b">
+                <h3 class="font-semibold text-green-800"><i class="fas fa-bed mr-2"></i>Resort Bookings</h3>
+            </div>
+            <div class="p-4">
+                <div id="resort-calendar" class="min-h-[400px]"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mt-8 bg-white rounded-lg shadow p-6">
+    <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+    <div class="flex gap-4">
+        <a href="{{ url_for('bookings_bus') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            <i class="fas fa-check mr-2"></i>Confirm Bookings
+        </a>
+        <a href="{{ url_for('content') }}" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
+            <i class="fas fa-image mr-2"></i>Update Images
+        </a>
+        <a href="{{ url_for('sales') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            <i class="fas fa-chart-line mr-2"></i>View Reports
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet">
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.js"></script>
+
+<script>
+// Calendar initialization with visibility fixes
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for container to be fully visible
+    setTimeout(initCalendars, 100);
+});
+
+function initCalendars() {
+    const busEl = document.getElementById('bus-calendar');
+    const resortEl = document.getElementById('resort-calendar');
+    
+    if (!busEl || !resortEl) {
+        console.error('Calendar containers not found');
+        return;
+    }
+    
+    // Show loading state
+    busEl.innerHTML = '<div class="flex items-center justify-center h-64 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</div>';
+    resortEl.innerHTML = '<div class="flex items-center justify-center h-64 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</div>';
+    
+    // Fetch calendar data
+    fetch('/api/admin/calendar_events')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            const busEvents = data.filter(e => e.title && e.title.startsWith('Bus:'));
+            const resortEvents = data.filter(e => e.title && e.title.startsWith('Resort:'));
+            
+            // Initialize Bus Calendar
+            const busCalendar = new FullCalendar.Calendar(busEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                events: busEvents,
+                eventClick: function(info) {
+                    if (info.event.url) {
+                        window.location.href = info.event.url;
+                    }
+                },
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                },
+                displayEventTime: true,
+                displayEventEnd: true,
+                dayMaxEvents: true,
+                noEventsContent: 'No bus bookings for this period'
+            });
+            
+            // Initialize Resort Calendar
+            const resortCalendar = new FullCalendar.Calendar(resortEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                events: resortEvents,
+                eventClick: function(info) {
+                    if (info.event.url) {
+                        window.location.href = info.event.url;
+                    }
+                },
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                },
+                displayEventTime: true,
+                displayEventEnd: true,
+                dayMaxEvents: true,
+                noEventsContent: 'No resort bookings for this period'
+            });
+            
+            // Render calendars
+            busCalendar.render();
+            resortCalendar.render();
+            
+            // IMPORTANT: Update size after render to fix visibility
+            setTimeout(() => {
+                busCalendar.updateSize();
+                resortCalendar.updateSize();
+            }, 100);
+            
+            // Update size on window resize
+            window.addEventListener('resize', function() {
+                busCalendar.updateSize();
+                resortCalendar.updateSize();
+            });
+            
+            console.log('[Calendar] Both calendars rendered successfully');
+        })
+        .catch(error => {
+            console.error('[Calendar] Error loading:', error);
+            const errorHtml = '<div class="p-4 text-red-600 bg-red-50 rounded"><i class="fas fa-exclamation-circle mr-2"></i>Failed to load calendar. <button onclick="initCalendars()" class="text-blue-600 underline ml-2">Retry</button></div>';
+            busEl.innerHTML = errorHtml;
+            resortEl.innerHTML = errorHtml;
+        });
+}
+</script>
+{% endblock %}

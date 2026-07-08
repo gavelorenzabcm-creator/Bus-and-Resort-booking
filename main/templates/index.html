@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-bg h-[500px] flex items-center justify-center text-white relative">
+    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div class="relative z-10 text-center px-4">
+        <h1 class="text-4xl md:text-6xl font-bold mb-4">
+            {{ settings.homepage_welcome or 'Welcome to BusResort' }}
+        </h1>
+        <p class="text-xl md:text-2xl mb-8 max-w-2xl mx-auto">
+            {{ settings.homepage_description or 'Book your bus and resort accommodations easily' }}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ url_for('bus_page') }}" class="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg hover:bg-blue-700 transition">
+                <i class="fas fa-bus mr-2"></i>Book a Bus
+            </a>
+            <a href="{{ url_for('resort_page') }}" class="bg-green-600 text-white px-8 py-4 rounded-lg text-lg hover:bg-green-700 transition">
+                <i class="fas fa-bed mr-2"></i>Book a Room
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold text-center mb-12">Our Services</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Bus Service -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            {% if settings.bus_image %}
+                <img src="{{ settings.bus_image }}" alt="Bus Service" class="w-full h-48 object-cover">
+            {% else %}
+                <div class="w-full h-48 bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-bus text-6xl text-blue-600"></i>
+                </div>
+            {% endif %}
+            <div class="p-6">
+                <h3 class="text-2xl font-bold mb-4">Bus Booking</h3>
+                <p class="text-gray-600 mb-4">Comfortable and reliable bus transportation for your trips. Choose from various vehicle types.</p>
+                <a href="{{ url_for('bus_page') }}" class="inline-block bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700">
+                    Book Now →
+                </a>
+            </div>
+        </div>
+        
+        <!-- Resort Service -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            {% if settings.resort_image %}
+                <img src="{{ settings.resort_image }}" alt="Resort Service" class="w-full h-48 object-cover">
+            {% else %}
+                <div class="w-full h-48 bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-bed text-6xl text-green-600"></i>
+                </div>
+            {% endif %}
+            <div class="p-6">
+                <h3 class="text-2xl font-bold mb-4">Resort Booking</h3>
+                <p class="text-gray-600 mb-4">Relax and unwind at our beautiful resort. Comfortable rooms with excellent amenities.</p>
+                <a href="{{ url_for('resort_page') }}" class="inline-block bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700">
+                    Book Now →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Why Choose Us -->
+<div class="bg-gray-100 py-16">
+    <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-12">Why Choose Us</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <i class="fas fa-check-circle text-5xl text-green-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Easy Booking</h3>
+                <p class="text-gray-600">Simple and fast online booking process</p>
+            </div>
+            <div class="text-center">
+                <i class="fas fa-shield-alt text-5xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">Secure</h3>
+                <p class="text-gray-600">Safe and reliable service guaranteed</p>
+            </div>
+            <div class="text-center">
+                <i class="fas fa-headset text-5xl text-purple-600 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">24/7 Support</h3>
+                <p class="text-gray-600">Always here to help you</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

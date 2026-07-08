@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} - {{ settings.site_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar { min-height: 100vh; }
+        .nav-link:hover { background: rgba(255,255,255,0.1); }
+        .nav-link.active { background: rgba(255,255,255,0.2); border-right: 4px solid #3b82f6; }
+        .flash-success { background: #d1fae5; border-left: 4px solid #10b981; }
+        .flash-error { background: #fee2e2; border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 bg-slate-800 text-white fixed">
+            <div class="p-6">
+                <h1 class="text-xl font-bold">{{ settings.site_name }}</h1>
+                <p class="text-sm text-gray-400 mt-1">Admin Panel</p>
+            </div>
+            
+            <nav class="mt-4">
+                <a href="{{ url_for('dashboard') }}" class="nav-link block px-6 py-3 {{ 'active' if request.endpoint == 'dashboard' }}">
+                    <i class="fas fa-tachometer-alt w-6"></i> Dashboard
+                </a>
+                <a href="{{ url_for('bookings_bus') }}" class="nav-link block px-6 py-3 {{ 'active' if request.endpoint == 'bookings_bus' }}">
+                    <i class="fas fa-bus w-6"></i> Bus Bookings
+                </a>
+                <a href="{{ url_for('bookings_resort') }}" class="nav-link block px-6 py-3 {{ 'active' if request.endpoint == 'bookings_resort' }}">
+                    <i class="fas fa-bed w-6"></i> Resort Bookings
+                </a>
+                <a href="{{ url_for('sales') }}" class="nav-link block px-6 py-3 {{ 'active' if request.endpoint == 'sales' }}">
+                    <i class="fas fa-chart-bar w-6"></i> Sales
+                </a>
+                <a href="{{ url_for('content') }}" class="nav-link block px-6 py-3 {{ 'active' if request.endpoint == 'content' }}">
+                    <i class="fas fa-cog w-6"></i> Settings
+                </a>
+            </nav>
+            
+            <div class="absolute bottom-0 w-full p-6">
+                <form method="POST" action="{{ url_for('logout') }}">
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="ml-64 flex-1 p-8">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }} p-4 rounded mb-4">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script>
+        // Simple navigation loading state
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.body.style.cursor = 'wait';
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

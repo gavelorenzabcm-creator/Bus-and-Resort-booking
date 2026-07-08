@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}About{% endblock %}
+
+{% block content %}
+<div class="bg-gray-800 text-white py-12">
+    <div class="container mx-auto px-4 text-center">
+        <h1 class="text-4xl font-bold mb-4">About Us</h1>
+        <p class="text-xl">Your trusted travel partner</p>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl font-bold mb-6">{{ settings.site_name }}</h2>
+        <p class="text-gray-600 mb-6 text-lg leading-relaxed">
+            We are dedicated to providing the best travel and accommodation experience for our customers. 
+            Whether you need a comfortable bus ride or a relaxing resort stay, we've got you covered.
+        </p>
+        
+        <h3 class="text-2xl font-bold mb-4">Our Services</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <i class="fas fa-bus text-4xl text-blue-600 mb-4"></i>
+                <h4 class="font-bold mb-2">Bus Transportation</h4>
+                <p class="text-gray-600">Comfortable and reliable bus services for all your travel needs.</p>
+            </div>
+            <div class="bg-green-50 p-6 rounded-lg">
+                <i class="fas fa-bed text-4xl text-green-600 mb-4"></i>
+                <h4 class="font-bold mb-2">Resort Accommodation</h4>
+                <p class="text-gray-600">Beautiful rooms with excellent amenities for a perfect stay.</p>
+            </div>
+        </div>
+        
+        <h3 class="text-2xl font-bold mb-4">Why Choose Us</h3>
+        <ul class="space-y-3 text-gray-600">
+            <li><i class="fas fa-check text-green-600 mr-2"></i>Easy online booking</li>
+            <li><i class="fas fa-check text-green-600 mr-2"></i>Competitive prices</li>
+            <li><i class="fas fa-check text-green-600 mr-2"></i>24/7 customer support</li>
+            <li><i class="fas fa-check text-green-600 mr-2"></i>Secure payment options</li>
+            <li><i class="fas fa-check text-green-600 mr-2"></i>Experienced staff</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

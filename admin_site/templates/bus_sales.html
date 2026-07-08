@@ -1,0 +1,79 @@
+{% extends "admin_base.html" %}
+{% block title %}Bus Sales Report - {{ site_settings.site_name if site_settings else 'BusResort' }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-black">📊 Bus Sales Report</h1>
+        <a href="/admin/sales{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="text-black hover:text-black font-medium">← Back to Sales</a>
+    </div>
+
+    {% include "sales_filter.html" %}
+
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="admin-card p-6 rounded-2xl md:col-span-2">
+            <div class="text-sm text-gray-600 mb-2">Total Bus Revenue (Confirmed)</div>
+            <div class="text-3xl font-bold text-black">PHP {{ '%.2f'|format(total) }}</div>
+        </div>
+        <div class="admin-card p-6 rounded-2xl">
+            <div class="text-sm text-gray-600 mb-2">Total Transactions</div>
+            <div class="text-3xl font-bold text-black">{{ sales|length }}</div>
+        </div>
+        <div class="flex flex-col gap-2 justify-center">
+            <a href="/admin/export/bus/xlsx{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium text-center">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel
+            </a>
+            <a href="/admin/export/bus/csv{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium text-center">
+                <i class="fas fa-file-csv mr-1"></i> Export CSV
+            </a>
+            <a href="/admin/export/bus/pdf{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" target="_blank" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium text-center">
+                <i class="fas fa-file-pdf mr-1"></i> Export PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-card rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-black">
+                <thead class="admin-table-header">
+                    <tr>
+                        <th class="p-3 text-left font-medium">ID</th>
+                        <th class="p-3 text-left font-medium">Name</th>
+                        <th class="p-3 text-left font-medium">Contact</th>
+                        <th class="p-3 text-left font-medium">Email</th>
+                        <th class="p-3 text-left font-medium">Destination</th>
+                        <th class="p-3 text-left font-medium">Pickup</th>
+                        <th class="p-3 text-left font-medium">Date / Time</th>
+                        <th class="p-3 text-left font-medium">Price</th>
+                        <th class="p-3 text-left font-medium">Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if sales %}
+                        {% for s in sales %}
+                            <tr class="admin-table-row">
+                                <td class="p-3">{{ s.id }}</td>
+                                <td class="p-3 font-medium">{{ s.name }}</td>
+                                <td class="p-3">{{ s.contact or '-' }}</td>
+                                <td class="p-3">{{ s.email or '-' }}</td>
+                                <td class="p-3">{{ s.destination }}</td>
+                                <td class="p-3">{{ s.pickup }}</td>
+                                <td class="p-3">{{ s.datetime or '-' }}</td>
+                                <td class="p-3 font-semibold">PHP {{ '%.2f'|format(s.price or 0) }}</td>
+                                <td class="p-3 text-gray-500">{{ s.created_at or '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+<td colspan="9" class="p-8 text-center text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3 opacity-60 block"></i>
+                                <p class="font-medium">No confirmed bus sales yet.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

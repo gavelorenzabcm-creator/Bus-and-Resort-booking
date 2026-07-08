@@ -1,0 +1,158 @@
+{% extends "admin_base.html" %}
+{% block title %}Sales Reports - {{ site_settings.site_name if site_settings else 'BusResort' }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-black">📊 Sales Reports Dashboard</h1>
+        <div class="flex gap-2">
+            <a href="/admin/sales/bus{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-bus mr-1"></i> Bus Details
+            </a>
+            <a href="/admin/sales/resort{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-bed mr-1"></i> Resort Details
+            </a>
+        </div>
+    </div>
+
+    {% include "sales_filter.html" %}
+
+    <!-- Summary Cards -->
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="admin-card p-6 rounded-2xl md:col-span-2">
+            <div class="text-sm text-gray-600 mb-2">Total Revenue (Confirmed)</div>
+            <div class="text-3xl font-bold text-black">PHP {{ '{:,.2f}'.format(total) }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ bus_count + resort_count }} total bookings</div>
+        </div>
+        <div class="admin-card p-6 rounded-2xl">
+            <div class="text-sm text-gray-600 mb-2">Bus Revenue</div>
+            <div class="text-2xl font-bold text-black">PHP {{ '{:,.2f}'.format(bus_total) }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ bus_count }} bookings</div>
+        </div>
+        <div class="admin-card p-6 rounded-2xl">
+            <div class="text-sm text-gray-600 mb-2">Resort Revenue</div>
+            <div class="text-2xl font-bold text-black">PHP {{ '{:,.2f}'.format(resort_total) }}</div>
+            <div class="text-xs text-gray-500 mt-1">{{ resort_count }} bookings</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <!-- Daily Sales Chart -->
+        <div class="admin-card p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold mb-4 text-black">Daily Sales Trend</h2>
+            {% if daily_items %}
+            <div class="space-y-3">
+                {% for date, amount in daily_items[:10] %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">{{ date }}</span>
+                    <div class="flex items-center gap-3">
+                        <div class="w-32 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (amount / (daily_items|map(attribute=1)|max) * 100) if daily_items|map(attribute=1)|max > 0 else 0 }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold w-24 text-right">PHP {{ '{:,.2f}'.format(amount) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No sales data available for this period.</p>
+            {% endif %}
+        </div>
+
+        <!-- Monthly Sales Chart -->
+        <div class="admin-card p-6 rounded-2xl">
+            <h2 class="text-xl font-semibold mb-4 text-black">Monthly Sales</h2>
+            {% if monthly_items %}
+            <div class="space-y-3">
+                {% for month, amount in monthly_items[:10] %}
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">{{ month }}</span>
+                    <div class="flex items-center gap-3">
+                        <div class="w-32 bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ (amount / (monthly_items|map(attribute=1)|max) * 100) if monthly_items|map(attribute=1)|max > 0 else 0 }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold w-24 text-right">PHP {{ '{:,.2f}'.format(amount) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No monthly data available.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="admin-card p-6 rounded-2xl mb-8">
+        <h2 class="text-xl font-semibold mb-4 text-black">Export Reports</h2>
+        <div class="flex flex-wrap gap-3">
+            <a href="/admin/export/bus/xlsx{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-excel mr-1"></i> Bus Sales (Excel)
+            </a>
+            <a href="/admin/export/resort/xlsx{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-excel mr-1"></i> Resort Sales (Excel)
+            </a>
+            <a href="/admin/export/combined/xlsx{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-secondary py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-excel mr-1"></i> Combined Report (Excel)
+            </a>
+            <a href="/admin/export/bus/csv{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-csv mr-1"></i> Bus (CSV)
+            </a>
+            <a href="/admin/export/resort/csv{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-csv mr-1"></i> Resort (CSV)
+            </a>
+            <a href="/admin/export/bus/pdf{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" target="_blank" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-pdf mr-1"></i> Bus (PDF)
+            </a>
+            <a href="/admin/export/resort/pdf{{ '?filter=' + filter_type + '&start_date=' + start_date + '&end_date=' + end_date if filter_type else '' }}" target="_blank" class="btn-muted py-2 px-4 rounded-lg text-sm font-medium">
+                <i class="fas fa-file-pdf mr-1"></i> Resort (PDF)
+            </a>
+        </div>
+    </div>
+
+    <!-- Booking Status Summary -->
+    <div class="admin-card p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold mb-4 text-black">Booking Summary by Status</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-black">
+                <thead class="admin-table-header">
+                    <tr>
+                        <th class="p-3 text-left font-medium">Category</th>
+                        <th class="p-3 text-left font-medium">Confirmed</th>
+                        <th class="p-3 text-left font-medium">Pending</th>
+                        <th class="p-3 text-left font-medium">Cancelled</th>
+                        <th class="p-3 text-left font-medium">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="admin-table-row">
+                        <td class="p-3 font-medium">Bus Bookings</td>
+                        <td class="p-3 text-green-600 font-semibold">{{ bus_confirmed }}</td>
+                        <td class="p-3 text-yellow-600">{{ bus_pending }}</td>
+                        <td class="p-3 text-red-600">{{ bus_cancelled }}</td>
+                        <td class="p-3 font-semibold">{{ bus_confirmed + bus_pending + bus_cancelled }}</td>
+                    </tr>
+                    <tr class="admin-table-row">
+                        <td class="p-3 font-medium">Resort Bookings</td>
+                        <td class="p-3 text-green-600 font-semibold">{{ resort_confirmed }}</td>
+                        <td class="p-3 text-yellow-600">{{ resort_pending }}</td>
+                        <td class="p-3 text-red-600">{{ resort_cancelled }}</td>
+                        <td class="p-3 font-semibold">{{ resort_confirmed + resort_pending + resort_cancelled }}</td>
+                    </tr>
+                    <tr class="admin-table-row bg-gray-50">
+                        <td class="p-3 font-bold">Total</td>
+                        <td class="p-3 text-green-600 font-bold">{{ bus_confirmed + resort_confirmed }}</td>
+                        <td class="p-3 text-yellow-600 font-bold">{{ bus_pending + resort_pending }}</td>
+                        <td class="p-3 text-red-600 font-bold">{{ bus_cancelled + resort_cancelled }}</td>
+                        <td class="p-3 font-bold">{{ bus_confirmed + bus_pending + bus_cancelled + resort_confirmed + resort_pending + resort_cancelled }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">
+            <i class="fas fa-info-circle mr-1"></i>
+            Note: Sales reports only include <strong>Confirmed</strong> bookings. Pending and Cancelled bookings are excluded from revenue calculations.
+        </p>
+    </div>
+</div>
+{% endblock %}

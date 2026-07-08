@@ -1,0 +1,724 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin Dashboard - BusResort{% endblock %}
+
+{% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+<style>
+/* Ensure calendar containers are visible */
+#admin-bus-calendar, #admin-resort-calendar {
+    min-height: 320px;
+    height: auto;
+    max-width: 100%;
+}
+.fc-view-harness {
+    min-height: 280px !important;
+    max-width: 100%;
+}
+
+/* Room photo upload: compact + responsive, scoped to dashboard template */
+.room-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.room-photo-card {
+    background: #ffffff;
+    border: 1px solid rgb(226 232 240);
+    border-radius: 1.25rem;
+    padding: 0.75rem;
+    min-width: 0; /* critical to avoid overflow/overlap on narrow screens */
+    box-sizing: border-box;
+}
+
+.room-photo-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.room-photo-card-title {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 700;
+    color: rgb(15 23 42);
+    line-height: 1.2;
+}
+
+.room-photo-card-sub {
+    font-size: 0.75rem; /* text-xs */
+    color: rgb(100 116 139);
+    line-height: 1.2;
+}
+
+.room-photo-preview {
+    width: 100%;
+    aspect-ratio: 4 / 5; /* enforce strict portrait ratio */
+    background: rgb(248 250 252);
+    border: 1px solid rgb(226 232 240);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.room-photo-empty {
+    font-size: 0.75rem;
+    color: rgb(148 163 184);
+}
+
+.room-photo-choose {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem 0.75rem;
+    border-radius: 1.25rem;
+    background: #ffffff;
+    border: 1px solid rgb(203 213 225);
+    color: rgb(15 23 42);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+}
+
+.room-photo-actions {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-wrap: nowrap; /* Replace | Delete must stay on one row */
+    gap: 8px; /* requirement: small gap */
+    align-items: center;
+}
+
+.room-photo-action-btn {
+    /* fixed sizing so buttons never overlap */
+    min-width: 120px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.room-photo-action-btn[data-when-has-image] {
+    display: inline-flex;
+}
+
+/* Replace/Delete should not take space until an image exists */
+.room-photo-actions {
+    box-sizing: border-box;
+}
+
+.room-photo-actions [data-action] {
+    display: none;
+}
+
+/* Shown by JS when a slot has an image selected */
+.room-photo-actions [data-when-has-image].is-visible {
+    display: inline-flex;
+}
+
+.room-photo-help {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: rgb(100 116 139);
+}
+
+@media (max-width: 900px) {
+    .room-photo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .room-photo-grid {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .room-photo-action-btn {
+        min-width: 0;
+        flex: 1;
+    }
+}
+</style>
+
+<script>
+// Calendar initialization with comprehensive error handling
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Calendar] DOM ready, waiting for FullCalendar...');
+    if (typeof FullCalendar === 'undefined') {
+        console.error('[Calendar] FullCalendar library not loaded!');
+        document.getElementById('admin-bus-calendar').innerHTML = 
+            '<div style="color:red;padding:20px;">Calendar library not loaded. Please refresh.</div>';
+        document.getElementById('admin-resort-calendar').innerHTML = 
+            '<div style="color:red;padding:20px;">Calendar library not loaded. Please refresh.</div>';
+        return;
+    }
+    setTimeout(initCalendars, 500);
+});
+
+async function initCalendars() {
+    const busEl = document.getElementById('admin-bus-calendar');
+    const resortEl = document.getElementById('admin-resort-calendar');
+    
+    if (!busEl || !resortEl) {
+        console.error('[Calendar] Containers not found:', {busEl, resortEl});
+        return;
+    }
+    
+    // Show loading state
+    const loadingHtml = '<div style="text-align:center;padding:50px;"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Loading bookings...</div>';
+    busEl.innerHTML = loadingHtml;
+    resortEl.innerHTML = loadingHtml;
+    
+    try {
+        console.log('[Calendar] Fetching events...');
+        // Bounded request window to avoid loading ALL bookings
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        start.setDate(start.getDate() - 30);
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end.setDate(end.getDate() + 60);
+
+        const toISODate = (d) => d.toISOString().slice(0, 10);
+        const url = `/api/admin/calendar_events?start=${encodeURIComponent(toISODate(start))}&end=${encodeURIComponent(toISODate(end))}`;
+
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+        });
+
+        
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        const events = Array.isArray(data) ? data : (data.events || []);
+        console.log('[Calendar] Received', events.length, 'events');
+        
+        const busEvents = events.filter(e => e.title && e.title.toLowerCase().startsWith('bus:'));
+        const resortEvents = events.filter(e => e.title && e.title.toLowerCase().startsWith('resort:'));
+        
+        console.log('[Calendar] Bus:', busEvents.length, 'Resort:', resortEvents.length);
+        
+        busEl.innerHTML = '';
+        resortEl.innerHTML = '';
+        
+        const busCalendar = new FullCalendar.Calendar(busEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: { 
+                left: 'prev,next today', 
+                center: 'title', 
+                right: 'dayGridMonth,listWeek' 
+            },
+            events: busEvents,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            displayEventTime: true,
+            displayEventEnd: true,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                }
+            },
+            noEventsContent: 'No bus bookings found'
+        });
+        
+        const resortCalendar = new FullCalendar.Calendar(resortEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            headerToolbar: { 
+                left: 'prev,next today', 
+                center: 'title', 
+                right: 'dayGridMonth,listWeek' 
+            },
+            events: resortEvents,
+            eventTimeFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            },
+            displayEventTime: true,
+            displayEventEnd: true,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                }
+            },
+            noEventsContent: 'No resort bookings found'
+        });
+        
+        busCalendar.render();
+        resortCalendar.render();
+        
+        setTimeout(() => {
+            busCalendar.updateSize();
+            resortCalendar.updateSize();
+        }, 100);
+        
+        window.addEventListener('resize', function() {
+            busCalendar.updateSize();
+            resortCalendar.updateSize();
+        });
+        
+        console.log('[Calendar] Both calendars rendered successfully');
+        
+    } catch (err) {
+        console.error('[Calendar] Error:', err);
+        const errorHtml = `
+            <div style="color:red;padding:20px;text-align:center;">
+                <i class="fas fa-exclamation-triangle"></i><br>
+                <strong>Failed to load calendar</strong><br>
+                ${err.message}<br><br>
+                <button onclick="initCalendars()" style="padding:8px 16px;cursor:pointer;">
+                    <i class="fas fa-refresh"></i> Retry
+                </button>
+            </div>`;
+        busEl.innerHTML = errorHtml;
+        resortEl.innerHTML = errorHtml;
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <section class="admin-card p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Overview</p>
+                <h1 class="mt-2 text-3xl font-semibold text-slate-900">Admin Dashboard</h1>
+                <p class="mt-2 text-sm text-slate-600">Manage bookings, resort rooms, pricing, and monitor calendar activity from one place.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="/admin/requests/bus" class="btn-primary px-4 py-3 rounded-2xl text-sm font-medium">Bus Bookings</a>
+                <a href="/admin/requests/resort" class="btn-secondary px-4 py-3 rounded-2xl text-sm font-medium">Resort Bookings</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="admin-card p-5 h-full">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Total Bus+Resort Bookings</p>
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">{{ total_bookings or 0 }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Monthly growth: <span class="font-semibold text-sky-700">+6.8%</span></p>
+                </div>
+                <div class="h-11 w-11 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center shadow-sm">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+        </article>
+        <article class="admin-card p-5 h-full">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Total Revenue</p>
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">₱{{ '{:,.2f}'.format(total_revenue or 0) }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Monthly growth: <span class="font-semibold text-emerald-700">Stable</span></p>
+                </div>
+                <div class="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-sm">
+                    <i class="fas fa-piggy-bank"></i>
+                </div>
+            </div>
+        </article>
+        <article class="admin-card p-5 h-full">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Total Customers</p>
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">{{ total_customers or 0 }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Monthly growth: <span class="font-semibold text-indigo-700">New</span></p>
+                </div>
+                <div class="h-11 w-11 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center shadow-sm">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </article>
+        <article class="admin-card p-5 h-full">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Active Reservations</p>
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">{{ active_reservations or 0 }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Monthly growth: <span class="font-semibold text-slate-700">Real-time</span></p>
+                </div>
+                <div class="h-11 w-11 rounded-2xl bg-slate-50 text-slate-700 flex items-center justify-center shadow-sm">
+                    <i class="fas fa-bolt"></i>
+                </div>
+            </div>
+        </article>
+    </div>
+
+    <section class="admin-card p-5">
+        <div class="grid gap-4 xl:grid-cols-2">
+            <div class="space-y-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">Bus Bookings Calendar</h2>
+                    <p class="mt-2 text-sm text-slate-500">Review upcoming departure schedules and reservations visually.</p>
+                </div>
+                <div id="admin-bus-calendar" class="calendar-container"></div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">Resort Bookings Calendar</h2>
+                    <p class="mt-2 text-sm text-slate-500">Track resort room stays and check-in/check-out dates.</p>
+                </div>
+                <div id="admin-resort-calendar" class="calendar-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-card p-5">
+        <div class="flex flex-col gap-6 xl:grid xl:grid-cols-[1.7fr,1.3fr] xl:items-start">
+            <div class="space-y-6">
+                <div>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold text-slate-900">Resort Room Management</h2>
+                            <p class="mt-2 text-sm text-slate-500">Manage room inventory, pricing, and the exclusive resort option.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="/admin/requests/resort" class="btn-secondary px-4 py-2 rounded-2xl text-sm font-medium">View Resort Bookings</a>
+                            <a href="/admin/content" class="btn-muted px-4 py-2 rounded-2xl text-sm">Site Content</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-card-alt p-4">
+                    <h3 class="text-base font-semibold text-slate-900 mb-4">Add / Update Room</h3>
+                    <form method="POST" action="{{ url_for('admin_add_room') }}" enctype="multipart/form-data" class="grid gap-4">
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Room Name</label>
+                                <input type="text" name="name" required class="admin-input w-full p-3 rounded-2xl" placeholder="e.g. Ocean Suite">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Room Type</label>
+                                <input type="text" name="room_type" required class="admin-input w-full p-3 rounded-2xl" placeholder="Standard / Deluxe / Family" list="room-type-options">
+                            </div>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Capacity</label>
+                                <input type="number" min="1" name="capacity" value="2" class="admin-input w-full p-3 rounded-2xl">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Room Photos (up to 3)</label>
+
+                                {# Responsive 3-card row upload UI (no overlap) #}
+                                <div class="room-photo-grid" role="group" aria-label="Room Photos (up to 3)">
+                                    {% for slot_index in [0,1,2] %}
+                                    <div class="room-photo-card" data-photo-card="{{ slot_index }}">
+                                        <div class="room-photo-card-header">
+                                            <div class="room-photo-card-title">Photo {{ slot_index + 1 }}</div>
+                                            <div class="room-photo-card-sub">4:5</div>
+                                        </div>
+
+                                        <div class="room-photo-preview" data-photo-preview="{{ slot_index }}">
+                                            <img id="new-room-photo-preview-{{ slot_index }}" src="" alt="Preview" class="hidden w-full h-full object-cover">
+                                            <div id="new-room-photo-empty-{{ slot_index }}" class="room-photo-empty">No photo</div>
+                                        </div>
+
+                                        <div class="mt-2">
+                                            <label class="room-photo-choose">
+                                                <input type="file" name="photo_{{ slot_index }}" accept="image/*" class="sr-only room-photo-input" data-new-preview="{{ slot_index }}" id="new-room-photo-input-{{ slot_index }}">
+                                                Choose File
+                                            </label>
+                                        </div>
+
+                                        <div class="room-photo-actions" data-photo-actions="{{ slot_index }}">
+                                            <button type="button" class="btn-secondary room-photo-action-btn" data-action="replace" data-slot="{{ slot_index }}" data-when-has-image="true">
+                                                Replace
+                                            </button>
+                                            <button type="button" class="btn-danger room-photo-action-btn" data-action="delete" data-slot="{{ slot_index }}" data-when-has-image="true">
+                                                Delete
+                                            </button>
+                                        </div>
+
+                                        <p class="room-photo-help">JPG/PNG/WebP ≤ 5MB</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                        </div>
+                        <button type="submit" class="btn-primary w-full py-3 rounded-2xl text-sm font-semibold">Add Room</button>
+                    </form>
+                    <datalist id="room-type-options">
+                        {% for pricing in room_pricing_rows %}
+                        <option value="{{ pricing.room_type }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <div>
+                    <h3 class="text-base font-semibold text-slate-900 mb-4">Existing Rooms</h3>
+                    {% if resort_rooms %}
+                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {% for room in resort_rooms %}
+                            <div class="admin-card-alt p-4">
+                                <div class="flex items-start justify-between gap-3 mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-slate-900">{{ room.name }}</h4>
+                                        <p class="text-sm text-slate-500">{{ room.room_type }}</p>
+                                    </div>
+                                    <span class="badge-pill {% if room.status == 'Available' %}bg-emerald-100 text-emerald-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ room.status }}</span>
+                                </div>
+                                {# New multi-photo gallery: show first photo as thumbnail; full management happens via upload slots below #}
+                                {% set legacy_thumb = room.photos[0] if room.photos and room.photos|length > 0 else room.image_path %}
+                                {% if legacy_thumb %}
+                                    {% set room_image_url = legacy_thumb %}
+                                    {% if not room_image_url.startswith('/') and not room_image_url.startswith('http') %}
+                                        {% set room_image_url = '/' ~ room_image_url %}
+                                    {% endif %}
+                                    <div class="mb-4">
+                                        <img src="{{ room_image_url }}" alt="{{ room.name }}" class="h-40 w-full rounded-3xl object-cover border border-slate-200">
+                                    </div>
+                                {% else %}
+                                    <div class="mb-4 flex h-40 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-sm text-slate-500">No photo</div>
+                                {% endif %}
+
+                                <form method="POST" action="{{ url_for('admin_edit_room', room_id=room.id) }}" enctype="multipart/form-data" class="space-y-3">
+                                    <input type="text" name="name" value="{{ room.name }}" required class="admin-input w-full p-3 rounded-2xl">
+                                    <input type="text" name="room_type" value="{{ room.room_type }}" required class="admin-input w-full p-3 rounded-2xl">
+                                    <div class="grid gap-3 sm:grid-cols-2">
+                                        <input type="number" min="1" name="capacity" value="{{ room.capacity or 2 }}" class="admin-input w-full p-3 rounded-2xl">
+                                        <select name="status" class="admin-input w-full p-3 rounded-2xl">
+                                            <option value="Available" {% if room.status == 'Available' %}selected{% endif %}>Available</option>
+                                            <option value="Unavailable" {% if room.status == 'Unavailable' %}selected{% endif %}>Unavailable</option>
+                                        </select>
+                                    </div>
+                                    {# Legacy single-image upload removed; multi-photo managed via photo_0..photo_2 in backend endpoint #}
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <label class="inline-flex items-center px-4 py-3 rounded-2xl bg-white border border-slate-300 text-sm font-medium cursor-pointer shadow-sm hover:bg-slate-50 transition">
+                                                <input type="file" name="photo_0" accept="image/*" class="sr-only">
+                                                Choose File
+                                            </label>
+                                            <span class="room-image-filename text-sm text-slate-500 truncate max-w-xs">Photo slot 1</span>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <label class="inline-flex items-center px-4 py-3 rounded-2xl bg-white border border-slate-300 text-sm font-medium cursor-pointer shadow-sm hover:bg-slate-50 transition">
+                                                <input type="file" name="photo_1" accept="image/*" class="sr-only">
+                                                Choose File
+                                            </label>
+                                            <span class="room-image-filename text-sm text-slate-500 truncate max-w-xs">Photo slot 2</span>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <label class="inline-flex items-center px-4 py-3 rounded-2xl bg-white border border-slate-300 text-sm font-medium cursor-pointer shadow-sm hover:bg-slate-50 transition">
+                                                <input type="file" name="photo_2" accept="image/*" class="sr-only">
+                                                Choose File
+                                            </label>
+                                            <span class="room-image-filename text-sm text-slate-500 truncate max-w-xs">Photo slot 3</span>
+                                        </div>
+                                    </div>
+
+
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="submit" class="btn-primary px-3 py-2 rounded-2xl text-sm transform transition duration-150 hover:-translate-y-0.5">Save</button>
+                                    </div>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_delete_room', room_id=room.id) }}" class="mt-3" onsubmit="return confirm('Delete {{ room.name }}?');">
+                                    <button type="submit" class="btn-danger px-3 py-2 rounded-2xl text-sm">Delete</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-slate-500">No resort rooms configured yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="admin-card-alt p-4">
+                    <h3 class="text-base font-semibold text-slate-900 mb-4">Room Type Prices</h3>
+                    <form method="POST" action="{{ url_for('admin_add_resort_price_option') }}" class="grid gap-3 mb-4">
+                        <input type="text" name="room_type" required class="admin-input w-full p-3 rounded-2xl" placeholder="New room type">
+                        <input type="number" min="0" step="1" name="price_per_night" value="0" required class="admin-input w-full p-3 rounded-2xl" placeholder="Price per night">
+                        <button type="submit" class="btn-primary w-full py-3 rounded-2xl text-sm font-semibold">Add Price Option</button>
+                    </form>
+                    {% if room_pricing_rows %}
+                        <div class="space-y-3">
+                            {% for pricing in room_pricing_rows %}
+                            <div class="rounded-3xl border border-slate-200 bg-white p-4">
+                                <form method="POST" action="{{ url_for('admin_edit_resort_price_option_by_id', pricing_id=pricing.id) }}" class="grid gap-3">
+                                    <input type="text" name="room_type" value="{{ pricing.room_type }}" required class="admin-input w-full p-3 rounded-2xl">
+                                    <input type="number" min="0" step="1" name="price_per_night" value="{{ pricing.price_per_night or 0 }}" required class="admin-input w-full p-3 rounded-2xl">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="submit" class="btn-secondary px-3 py-2 rounded-2xl text-sm">Save</button>
+                                    </div>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin_delete_resort_price_option_by_id', pricing_id=pricing.id) }}" class="mt-3" onsubmit="return confirm('Delete {{ pricing.room_type }} price option?');">
+                                    <button type="submit" class="btn-danger px-3 py-2 rounded-2xl text-sm">Delete</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-slate-500">No pricing options yet.</p>
+                    {% endif %}
+                </div>
+
+                <div class="admin-card-alt p-4">
+                    <h3 class="text-base font-semibold text-slate-900 mb-4">Exclusive Option</h3>
+                    <form method="POST" action="{{ url_for('admin_edit_exclusive_resort_price') }}" class="grid gap-3">
+                        <label class="block text-sm font-medium text-slate-700">Exclusive Price (PHP)</label>
+                        <input type="number" min="0" step="1" name="exclusive_price" value="{{ exclusive_price or 0 }}" class="admin-input w-full p-3 rounded-2xl">
+                        <button type="submit" class="btn-primary w-full py-3 rounded-2xl text-sm font-semibold">Save Exclusive Price</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin_delete_exclusive_resort_price') }}" class="mt-3">
+                        <button type="submit" class="btn-secondary w-full py-3 rounded-2xl text-sm">Reset to 0</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-card p-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-slate-900">Rentable Appliances</h2>
+                <p class="mt-2 text-sm text-slate-500">Maintain appliance rentals available at the resort.</p>
+            </div>
+        </div>
+        <form method="POST" action="/admin/appliances/add" class="mt-5 grid gap-4 sm:grid-cols-2">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Appliance Name</label>
+                <input type="text" name="name" required class="admin-input w-full p-3 rounded-2xl" placeholder="e.g. Refrigerator">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Rental Price (PHP)</label>
+                <input type="number" min="0" step="1" name="price" required class="admin-input w-full p-3 rounded-2xl" placeholder="Price">
+            </div>
+            <div class="sm:col-span-2">
+                <button type="submit" class="btn-primary w-full py-3 rounded-2xl text-sm font-semibold">Add / Update Appliance</button>
+            </div>
+        </form>
+
+        {% if appliances %}
+            <div class="mt-6 grid gap-4">
+                {% for appliance in appliances %}
+                <div class="admin-card-alt p-4">
+                    <form method="POST" action="/admin/appliances/edit/{{ appliance.id }}" class="grid gap-3 sm:grid-cols-2">
+                        <input type="text" name="name" value="{{ appliance.name }}" required class="admin-input w-full p-3 rounded-2xl">
+                        <input type="number" min="0" step="1" name="price" value="{{ appliance.price or 0 }}" required class="admin-input w-full p-3 rounded-2xl">
+                        <div class="flex flex-wrap gap-2 sm:col-span-2">
+                            <button type="submit" class="btn-secondary px-3 py-2 rounded-2xl text-sm">Save</button>
+                        </div>
+                    </form>
+                    <form method="POST" action="/admin/appliances/delete/{{ appliance.id }}" class="mt-2" onsubmit="return confirm('Delete {{ appliance.name }}?');">
+                        <button type="submit" class="btn-danger px-3 py-2 rounded-2xl text-sm">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="mt-4 text-sm text-slate-500">No appliances configured yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var newInput = document.getElementById('new-room-image');
+    if(newInput){
+        var newFilename = document.getElementById('new-room-image-filename');
+        newInput.addEventListener('change', function(e){
+            var name = e.target.files && e.target.files.length ? e.target.files[0].name : 'No file chosen';
+            if(newFilename) newFilename.textContent = name;
+        });
+    }
+
+    document.querySelectorAll('.room-image-input').forEach(function(input){
+        var filenameSpan = input.parentElement ? input.parentElement.nextElementSibling : null;
+        input.addEventListener('change', function(e){
+            var name = e.target.files && e.target.files.length ? e.target.files[0].name : 'No file chosen';
+            if(filenameSpan) filenameSpan.textContent = name;
+        });
+    });
+
+    // Room photo upload: preview + Replace/Delete actions (no overlap; conditional visibility)
+    function setActionsVisibility(slotIndex, hasImage) {
+        const actions = document.querySelector('[data-photo-actions="' + slotIndex + '"]');
+        if (!actions) return;
+        const replaceBtn = actions.querySelector('[data-action="replace"][data-slot="' + slotIndex + '"]');
+        const deleteBtn = actions.querySelector('[data-action="delete"][data-slot="' + slotIndex + '"]');
+        if (replaceBtn) replaceBtn.classList.toggle('is-visible', !!hasImage);
+        if (deleteBtn) deleteBtn.classList.toggle('is-visible', !!hasImage);
+    }
+
+    // Strict 4:5 preview enforcement via CSS aspect-ratio; this JS just toggles content.
+    function setPreview(slotIndex, file) {
+        const img = document.getElementById('new-room-photo-preview-' + slotIndex);
+        const empty = document.getElementById('new-room-photo-empty-' + slotIndex);
+        const input = document.getElementById('new-room-photo-input-' + slotIndex);
+        if (!img || !empty || !input) return;
+
+        if (!file) {
+            img.src = '';
+            img.classList.add('hidden');
+            empty.classList.remove('hidden');
+            empty.textContent = 'No photo';
+            // ensure no selected files remain
+            try { input.value = ''; } catch (e) {}
+            setActionsVisibility(slotIndex, false);
+            return;
+        }
+
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        img.onload = function(){ URL.revokeObjectURL(url); };
+        img.classList.remove('hidden');
+        empty.classList.add('hidden');
+        setActionsVisibility(slotIndex, true);
+    }
+
+    // initialize buttons hidden (server-rendered state starts without images)
+    [0,1,2].forEach(function(i){ setActionsVisibility(i, false); });
+
+    document.querySelectorAll('.room-photo-input').forEach(function(input){
+        const slotIndex = input.dataset && input.dataset.newPreview ? input.dataset.newPreview : null;
+        if (slotIndex === null) return;
+        input.addEventListener('change', function(e){
+            const file = e.target.files && e.target.files.length ? e.target.files[0] : null;
+            setPreview(slotIndex, file);
+        });
+    });
+
+    document.querySelectorAll('[data-action="replace"]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            const slotIndex = btn.dataset.slot;
+            const input = document.getElementById('new-room-photo-input-' + slotIndex);
+            if (input) input.click();
+        });
+    });
+
+    document.querySelectorAll('[data-action="delete"]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            const slotIndex = btn.dataset.slot;
+            // client-side only: clear selection and preview; backend update happens on save
+            setPreview(slotIndex, null);
+        });
+    });
+});
+</script>
+{% endblock %}

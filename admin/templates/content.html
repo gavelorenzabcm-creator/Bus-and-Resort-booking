@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-8">Website Settings</h1>
+
+<form method="POST" enctype="multipart/form-data" class="max-w-2xl">
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">General</h2>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Site Name</label>
+            <input type="text" name="site_name" value="{{ settings.site_name }}" 
+                   class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Welcome Message</label>
+            <input type="text" name="homepage_welcome" value="{{ settings.homepage_welcome }}"
+                   class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Description</label>
+            <textarea name="homepage_description" rows="3"
+                      class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">{{ settings.homepage_description }}</textarea>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Contact Email</label>
+            <input type="email" name="contact_email" value="{{ settings.contact_email }}"
+                   class="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">Images</h2>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Homepage Image</label>
+            <input type="file" name="homepage_image" accept="image/*"
+                   class="w-full px-4 py-2 border rounded">
+            {% if settings.homepage_image %}
+                <div class="mt-2">
+                    <img src="{{ settings.homepage_image }}" class="h-32 rounded">
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Resort Page Image</label>
+            <input type="file" name="resort_image" accept="image/*"
+                   class="w-full px-4 py-2 border rounded">
+            {% if settings.resort_image %}
+                <div class="mt-2">
+                    <img src="{{ settings.resort_image }}" class="h-32 rounded">
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-gray-700 mb-2">Bus Page Image</label>
+            <input type="file" name="bus_image" accept="image/*"
+                   class="w-full px-4 py-2 border rounded">
+            {% if settings.bus_image %}
+                <div class="mt-2">
+                    <img src="{{ settings.bus_image }}" class="h-32 rounded">
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+        <i class="fas fa-save mr-2"></i>Save Settings
+    </button>
+</form>
+{% endblock %}

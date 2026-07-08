@@ -1,0 +1,117 @@
+{% extends "admin_base.html" %}
+{% block title %}Contact Information - BusResort Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl">
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold mb-1 text-black">Contact Information</h1>
+      <p class="text-sm text-slate-600">Edits here update the public website footer instantly after saving.</p>
+    </div>
+  </div>
+
+  <form method="POST" class="admin-card p-6 rounded-2xl space-y-8" enctype="multipart/form-data">
+
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-black">Business Details</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Business Name</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="business_name" value="{{ contact.business_name if contact else '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Business Tagline</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="business_tagline" value="{{ contact.business_tagline if contact else '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Contact Email</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="email" name="email" value="{{ contact.email if contact else '' }}" placeholder="name@example.com" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Primary Phone Number</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="tel" name="phone" value="{{ contact.phone if contact else '' }}" placeholder="+63 ..." />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Secondary Phone Number (optional)</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="tel" name="secondary_phone" value="{{ contact.secondary_phone if contact else '' }}" placeholder="+63 ..." />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Mobile Number</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="tel" name="mobile" value="{{ contact.mobile if contact else '' }}" placeholder="+63 ..." />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">WhatsApp Number (optional)</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="tel" name="whatsapp_number" value="{{ contact.whatsapp_number if contact else '' }}" placeholder="+63 ..." />
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-black">Address & Hours</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Office Address</label>
+          <textarea class="admin-input w-full p-3 rounded-lg" name="office_address" rows="3">{{ contact.office_address if contact else '' }}</textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Google Maps URL</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="url" name="google_maps_link" value="{{ contact.google_maps_link if contact else '' }}" placeholder="https://maps.google.com/..." />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Business Hours</label>
+          <textarea class="admin-input w-full p-3 rounded-lg" name="business_hours" rows="3">{{ contact.business_hours if contact else '' }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-black">Social Media Links</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-black mb-2">Facebook URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="facebook_url" value="{{ contact.facebook_url if contact else '' }}" placeholder="https://facebook.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">Instagram URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="instagram_url" value="{{ contact.instagram_url if contact else '' }}" placeholder="https://instagram.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">X (Twitter) URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="x_url" value="{{ contact.x_url if contact else '' }}" placeholder="https://x.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">TikTok URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="tiktok_url" value="{{ contact.tiktok_url if contact else '' }}" placeholder="https://tiktok.com/..." /></div>
+        <div class="md:col-span-2"><label class="block text-sm font-medium text-black mb-2">YouTube URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="youtube_url" value="{{ contact.youtube_url if contact else '' }}" placeholder="https://youtube.com/..." /></div>
+      </div>
+    </section>
+
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-black">Footer Content</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Footer Company Description</label>
+          <textarea class="admin-input w-full p-3 rounded-lg" name="footer_description" rows="3">{{ footer.footer_description if footer else '' }}</textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Contact Section Title</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="contact_section_title" value="{{ footer.contact_section_title if footer else '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Copyright Text</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="copyright_text" value="{{ footer.copyright_text if footer else '' }}" placeholder="e.g., © 2026 BusResort" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Footer Logo (optional)</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="file" name="footer_logo" accept="image/jpeg,image/jpg,image/png,image/webp" />
+          {% if footer and footer.footer_logo_path %}
+            <div class="mt-3">
+              <img src="/uploads/{{ footer.footer_logo_path.split('/')[-1] if footer.footer_logo_path.startswith('uploads/') else footer.footer_logo_path }}" class="h-24 object-contain rounded" alt="Footer Logo" />
+            </div>
+          {% endif %}
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Quick Links (JSON)</label>
+          <textarea class="admin-input w-full p-3 rounded-lg" name="quick_links_json" rows="3">{{ footer.quick_links_json if footer else '[]' }}</textarea>
+          <p class="text-xs text-slate-500 mt-2">Format: [{"label":"Book Mini Bus","href":"/bus"}, ...]</p>
+        </div>
+      </div>
+    </section>
+
+    <div>
+      <button type="submit" class="btn-primary w-full py-3 rounded-lg font-medium">Save Changes</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+

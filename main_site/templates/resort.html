@@ -1,0 +1,900 @@
+ {% extends "base.html" %}
+{% block title %}Resort Booking - BusResort{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold text-black mb-6 text-center">Macaya Beach Resort Booking</h1>
+    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm mb-6">
+        <img src="{% if site_settings and site_settings.resort_image %}/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}{% else %}/uploads/MBR.jpg{% endif %}" alt="Macaya Beach Resort" class="w-full max-h-64 md:max-h-80 object-contain rounded-xl shadow-lg mb-6 mx-auto block" loading="lazy" onerror="this.style.display='none';">
+
+        <p class="text-lg text-gray-600 text-center font-semibold text-xl md:text-2xl">Macaya Beach Resort</p>
+        <p class="text-gray-600 text-center mt-2">Tap the cards below to select one or more rooms.</p>
+    </div>
+
+    <form method="POST" action="/resort" id="resort-form" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm">
+        <div class="grid md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Full Name *</label>
+                <input type="text" name="name" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Contact Number *</label>
+                <input type="tel" name="contact" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Email *</label>
+                <input type="email" name="email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Check-in Date *</label>
+                <input type="date" id="checkin" name="checkin" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Check-out Date *</label>
+                <input type="date" id="checkout" name="checkout" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Check-in Time *</label>
+                <input type="time" name="checkin_time" value="14:00" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Check-out Time *</label>
+                <input type="time" name="checkout_time" value="12:00" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-black mb-2">Total Guests *</label>
+                <input type="number" name="guests" min="1" max="50" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+        </div>
+
+        <!-- Room Selection Cards -->
+        <div class="mt-8">
+            <div class="flex items-center justify-between mb-3">
+                <label class="block text-sm font-medium text-black">Select Rooms *</label>
+                <span id="selected-count" class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">0 selected</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Tap a card to select or deselect. You can choose multiple rooms.</p>
+
+            <div id="room-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for room in resort_rooms %}
+                <label class="room-card relative cursor-pointer border-2 border-gray-200 rounded-xl p-4 transition-all duration-200 hover:border-blue-300 hover:shadow-md select-none bg-white"
+                       data-room-id="{{ room.id }}"
+                       data-price="{{ room.price }}">
+                    <input type="checkbox" name="room_types[]" value="{{ room.id }}" data-price="{{ room.price }}" class="room-checkbox sr-only">
+                    <!-- Checkmark badge -->
+                    <div class="check-badge absolute top-3 right-3 w-7 h-7 rounded-full bg-blue-600 text-white items-center justify-center hidden shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    {# Multi-photo portrait carousel (4:5) #}
+                    {% set room_photos = room.photos if room.photos is defined and room.photos else [] %}
+                    {% if room_photos|length > 0 %}
+                        <div class="room-photo-carousel relative w-full mb-3" data-carousel-room-id="{{ room.id }}">
+                            <div class="aspect-[4/5] w-full overflow-hidden rounded-lg shadow-md bg-white border border-gray-200">
+                                {% for i in range(0,3) %}
+                                    {% set p = room_photos[i] if i < (room_photos|length) else '' %}
+{% if p %}
+<img
+                                            src="{% if p.startswith('/') %}{{ p }}{% elif p.startswith('uploads/') %}/{{ p }}{% else %}/uploads/{{ p }}{% endif %}"
+                                            alt="{{ room.name }} photo {{ i+1 }}"
+                                            class="room-photo-slide absolute inset-0 w-full h-full object-cover {% if i==0 %}block{% else %}hidden{% endif %}"
+                                            loading="lazy"
+                                            data-slide-index="{{ i }}"
+                                        >
+                                    {% endif %}
+                                {% endfor %}
+                                {% if room_photos|length < 3 %}
+                                    {# no-op; number of dots/arrows computed in JS #}
+                                {% endif %}
+                            </div>
+
+                            {# Desktop arrows #}
+                            <button type="button" class="room-carousel-prev hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 items-center justify-center w-9 h-9 rounded-full bg-white/90 hover:bg-white border border-gray-200 shadow" aria-label="Previous">
+                                ‹
+                            </button>
+                            <button type="button" class="room-carousel-next hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 items-center justify-center w-9 h-9 rounded-full bg-white/90 hover:bg-white border border-gray-200 shadow" aria-label="Next">
+                                ›
+                            </button>
+
+                            {# Dots #}
+                            <div class="room-carousel-dots flex gap-2 justify-center mt-2">
+                                {% for i in range(0, (room_photos|length)) %}
+                                    <button type="button" class="room-carousel-dot w-2.5 h-2.5 rounded-full bg-gray-300 {% if i==0 %}bg-blue-600{% endif %}" data-dot-index="{{ i }}" aria-label="Go to photo {{ i+1 }}"></button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="aspect-[4/5] w-full overflow-hidden rounded-lg shadow-md mb-3 bg-white border border-gray-200 flex items-center justify-center">
+                            <img src="/uploads/MBR.jpg" alt="{{ room.name }}" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                    {% endif %}
+                    <div class="space-y-1">
+                        <div class="font-semibold text-black text-base leading-tight">{{ room.name }}</div>
+                        <div class="text-sm text-gray-600">{{ room.room_type }}</div>
+                        <div class="text-sm font-bold text-blue-700">₱{{ '{:,.0f}'.format(room.price or 0) }} <span class="font-normal text-gray-500 text-xs">/ night</span></div>
+                        <div class="text-xs text-gray-500 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                            Good for {{ room.capacity }} persons
+                        </div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <p id="room-error" class="text-sm text-red-600 mt-2 hidden">Please select at least one room.</p>
+        </div>
+
+        <div class="mt-6">
+            <label class="block text-sm font-medium text-black mb-2">Payment Option *</label>
+            <select name="payment_method" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
+                <option value="Cash">Cash</option>
+                <option value="GCash">GCash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+            </select>
+        </div>
+
+        <div class="mt-6">
+            <label class="inline-flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" id="is-exclusive" name="is_exclusive" class="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                <span class="text-sm font-medium text-black">Exclusive Resort (auto-books all available rooms) + ₱{{ '{:,.0f}'.format(exclusive_price or 0) }}/day</span>
+            </label>
+        </div>
+        <div id="exclusive-rooms-section" class="mt-3 hidden">
+            <div class="border border-gray-300 rounded-lg p-3 bg-gray-50 text-sm text-black">
+                Exclusive booking is enabled. The system will automatically reserve all available rooms for your selected dates.
+            </div>
+        </div>
+
+        {% if appliances %}
+        <div class="mt-6">
+            <label class="block text-sm font-medium text-black mb-2">Rentable Appliances (optional)</label>
+            <div class="space-y-2">
+                {% for a in appliances %}
+                <label class="flex items-center justify-between border rounded-lg p-3 cursor-pointer hover:bg-gray-50 transition">
+                    <span class="text-sm">{{ a.name }} (₱{{ '{:,.0f}'.format(a.price) }})</span>
+                    <input type="checkbox" name="appliance_selected_{{ a.id }}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" data-price="{{ a.price }}">
+                </label>
+                {% endfor %}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Each selected appliance is charged once per booking.</p>
+        </div>
+        {% endif %}
+
+<!-- Summary -->
+        <div class="mt-8 p-5 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 class="font-bold text-black mb-3 text-lg">Booking Summary</h3>
+            <div id="booking-total" class="text-3xl font-bold text-black mb-3">₱0</div>
+            <!-- Hidden input to store calculated total for server submission -->
+            <input type="hidden" id="calculated-total" name="calculated_total" value="0">
+            <div class="text-sm text-gray-600 space-y-1.5">
+                <div class="flex justify-between">
+                    <span id="room-total">Rooms: ₱0 (0 nights)</span>
+                    <span id="room-count-summary" class="text-gray-500">0 rooms</span>
+                </div>
+                <div id="exclusive-total">Exclusive: ₱0</div>
+                <div id="appliances-total">Appliances: ₱0</div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Prices update automatically as you select rooms and dates.</p>
+        </div>
+
+        <button type="submit" class="w-full mt-8 bg-blue-600 text-white py-4 px-6 rounded-xl hover:bg-blue-700 font-semibold text-lg shadow-sm transition active:scale-[0.98]">
+            Submit Booking
+        </button>
+    </form>
+
+    <div class="mt-6 bg-white p-6 rounded-2xl shadow-sm">
+        <h2 class="text-xl font-semibold mb-3">Resort Availability Calendar</h2>
+        <p class="text-sm text-gray-600 mb-4">Shows reserved (Pending) and booked (Confirmed) date ranges.</p>
+        <div id="resort-calendar" class="bg-white"></div>
+
+        <div class="mt-3 text-xs text-gray-500">Tip: Click a date to quickly set check-in/check-out (1 night by default).</div>
+    </div>
+</div>
+{% block scripts %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+
+<style>
+    /* Room photo lightbox */
+    .lightbox-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 180ms ease;
+        padding: 16px;
+    }
+    .lightbox-backdrop.open { opacity: 1; }
+
+    .lightbox-content {
+        position: relative;
+        width: min(1100px, 100%);
+        max-height: calc(100vh - 32px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: scale(0.98);
+        transition: transform 180ms ease;
+    }
+    .lightbox-backdrop.open .lightbox-content { transform: scale(1); }
+
+    .lightbox-image {
+        width: 100%;
+        height: auto;
+        max-height: calc(100vh - 120px);
+        object-fit: contain;
+        border-radius: 16px;
+        background: #0b1220;
+        user-select: none;
+        -webkit-user-drag: none;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+    }
+
+    .lightbox-close {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 42px;
+        height: 42px;
+        border-radius: 9999px;
+        background: rgba(255,255,255,0.92);
+        color: #0f172a;
+        border: 1px solid rgba(255,255,255,0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        transition: transform 120ms ease, background 120ms ease;
+    }
+    .lightbox-close:hover { background: #ffffff; transform: scale(1.03); }
+
+    .lightbox-nav-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 46px;
+        height: 46px;
+        border-radius: 9999px;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid rgba(255,255,255,0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        transition: transform 120ms ease, background 120ms ease;
+    }
+    .lightbox-nav-btn:hover { background: #ffffff; transform: translateY(-50%) scale(1.03); }
+    .lightbox-nav-btn.prev { left: -10px; }
+    .lightbox-nav-btn.next { right: -10px; }
+
+    @media (max-width: 480px) {
+        .lightbox-nav-btn.prev { left: 0px; }
+        .lightbox-nav-btn.next { right: 0px; }
+        .lightbox-close { top: -6px; right: -6px; }
+    }
+
+    .lightbox-indicator {
+        position: absolute;
+        left: 50%;
+        bottom: -44px;
+        transform: translateX(-50%);
+        color: rgba(255,255,255,0.92);
+        font-size: 14px;
+        background: rgba(15,23,42,0.55);
+        border: 1px solid rgba(255,255,255,0.15);
+        padding: 8px 12px;
+        border-radius: 9999px;
+        backdrop-filter: blur(6px);
+        white-space: nowrap;
+        user-select: none;
+    }
+    @media (max-width: 640px) {
+        .lightbox-indicator { bottom: 10px; }
+    }
+</style>
+
+<!-- FullCalendar CSS (required for proper rendering) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" />
+
+<!-- Full-screen room photo lightbox -->
+<div id="room-lightbox" class="lightbox-backdrop" style="display:none;" aria-hidden="true">
+
+    <div class="lightbox-content" role="dialog" aria-modal="true" aria-label="Room photo viewer">
+        <button type="button" class="lightbox-close" aria-label="Close">×</button>
+        <button type="button" class="lightbox-nav-btn prev" aria-label="Previous image" style="display:none;">‹</button>
+        <button type="button" class="lightbox-nav-btn next" aria-label="Next image" style="display:none;">›</button>
+        <img id="room-lightbox-img" class="lightbox-image" alt="Room photo" />
+        <div id="room-lightbox-indicator" class="lightbox-indicator">1 of 1</div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+
+    const roomLightbox = document.getElementById('room-lightbox');
+    const roomLightboxImg = document.getElementById('room-lightbox-img');
+    const roomLightboxIndicator = document.getElementById('room-lightbox-indicator');
+    const lightboxCloseBtn = roomLightbox ? roomLightbox.querySelector('.lightbox-close') : null;
+    const lightboxPrevBtn = roomLightbox ? roomLightbox.querySelector('.lightbox-nav-btn.prev') : null;
+    const lightboxNextBtn = roomLightbox ? roomLightbox.querySelector('.lightbox-nav-btn.next') : null;
+
+    let lightboxOpen = false;
+    let lightboxSlides = []; // array of thumbnail <img> elements for current room
+    let lightboxIndex = 0;
+
+    function normalizeImageSrc(src) {
+        if (!src) return '';
+        // handle absolute URLs and already-correct /uploads/ paths
+        if (src.startsWith('http://') || src.startsWith('https://')) return src;
+        if (src.startsWith('/')) return src;
+        // if image path begins with uploads/ or similar
+        if (src.startsWith('uploads/')) return '/' + src;
+        // fallback: assume relative to /uploads/
+        return '/uploads/' + src;
+    }
+
+    function setLightboxOpen(open) {
+        if (!roomLightbox) return;
+        lightboxOpen = open;
+        if (open) {
+            roomLightbox.style.display = 'flex';
+            requestAnimationFrame(() => roomLightbox.classList.add('open'));
+            document.body.style.overflow = 'hidden';
+            roomLightbox.setAttribute('aria-hidden', 'false');
+
+            // Preload next image for perceived performance
+            const nextIdx = (lightboxIndex + 1) % (lightboxSlides.length || 1);
+            if (lightboxSlides[nextIdx]) {
+                const preloadSrc = normalizeImageSrc(lightboxSlides[nextIdx].getAttribute('src'));
+                const img = new Image();
+                img.src = preloadSrc;
+            }
+        } else {
+
+            roomLightbox.classList.remove('open');
+            document.body.style.overflow = '';
+            // let CSS transition finish before hiding
+            setTimeout(() => {
+                if (!roomLightbox) return;
+                roomLightbox.style.display = 'none';
+                roomLightbox.setAttribute('aria-hidden', 'true');
+            }, 180);
+        }
+    }
+
+
+    function renderLightbox() {
+        if (!lightboxSlides.length) return;
+        const activeImgEl = lightboxSlides[lightboxIndex];
+        const src = normalizeImageSrc(activeImgEl.getAttribute('src'));
+        const alt = activeImgEl.getAttribute('alt') || 'Room photo';
+
+        roomLightboxImg.src = src;
+        roomLightboxImg.alt = alt;
+
+        const total = lightboxSlides.length;
+        roomLightboxIndicator.textContent = `${lightboxIndex + 1} of ${total}`;
+
+        const showNav = total > 1;
+        if (lightboxPrevBtn) lightboxPrevBtn.style.display = showNav ? '' : 'none';
+        if (lightboxNextBtn) lightboxNextBtn.style.display = showNav ? '' : 'none';
+    }
+
+    function openRoomLightboxFromThumb(thumbImgEl) {
+        if (!thumbImgEl) return;
+        const carousel = thumbImgEl.closest('.room-photo-carousel');
+        if (!carousel) return;
+
+        const slides = Array.from(carousel.querySelectorAll('.room-photo-slide'))
+            .filter(img => img && img.getAttribute('src'));
+
+        if (!slides.length) return;
+
+        lightboxSlides = slides;
+
+        const idx = parseInt(thumbImgEl.dataset.slideIndex || '0', 10);
+        lightboxIndex = Math.max(0, Math.min(idx, slides.length - 1));
+
+        renderLightbox();
+        setLightboxOpen(true);
+
+        // focus close for accessibility
+        if (lightboxCloseBtn) lightboxCloseBtn.focus();
+    }
+
+    function closeRoomLightbox() {
+        if (!lightboxOpen) return;
+        setLightboxOpen(false);
+    }
+
+    // Close actions
+    if (lightboxCloseBtn) {
+        lightboxCloseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeRoomLightbox();
+        });
+    }
+
+    if (roomLightbox) {
+        // clicking outside the image closes
+        roomLightbox.addEventListener('click', (e) => {
+            if (!lightboxOpen) return;
+            const content = e.target === roomLightbox || e.currentTarget === roomLightbox;
+            if (content) closeRoomLightbox();
+        });
+    }
+
+    // Prevent inside clicks from closing (outside click only)
+    if (roomLightboxImg) {
+        roomLightboxImg.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
+    // Keyboard navigation + esc
+    document.addEventListener('keydown', (e) => {
+        if (!lightboxOpen) return;
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeRoomLightbox();
+            return;
+        }
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (lightboxSlides.length > 1) {
+                lightboxIndex = (lightboxIndex - 1 + lightboxSlides.length) % lightboxSlides.length;
+                renderLightbox();
+            }
+            return;
+        }
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (lightboxSlides.length > 1) {
+                lightboxIndex = (lightboxIndex + 1) % lightboxSlides.length;
+                renderLightbox();
+            }
+            return;
+        }
+    });
+
+    // Prev/Next buttons
+    if (lightboxPrevBtn) {
+        lightboxPrevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!lightboxSlides.length) return;
+            lightboxIndex = (lightboxIndex - 1 + lightboxSlides.length) % lightboxSlides.length;
+            renderLightbox();
+        });
+    }
+    if (lightboxNextBtn) {
+        lightboxNextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!lightboxSlides.length) return;
+            lightboxIndex = (lightboxIndex + 1) % lightboxSlides.length;
+            renderLightbox();
+        });
+    }
+
+    // Prevent clicks on navigation/buttons from bubbling to backdrop close.
+    if (roomLightbox) {
+        const stop = (ev) => {
+            if (!lightboxOpen) return;
+            ev.stopPropagation();
+        };
+        roomLightbox.querySelectorAll('button.lightbox-close, button.lightbox-nav-btn').forEach((btn) => {
+            btn.addEventListener('click', stop);
+        });
+    }
+
+
+    // Swipe in lightbox
+    let lbStartX = null;
+    let lbIsDragging = false;
+    if (roomLightboxImg) {
+        roomLightboxImg.addEventListener('touchstart', (ev) => {
+            if (!ev.touches || !ev.touches.length) return;
+            lbStartX = ev.touches[0].clientX;
+            lbIsDragging = true;
+        }, { passive: true });
+
+        roomLightboxImg.addEventListener('touchend', (ev) => {
+            if (!lbIsDragging || lbStartX === null) return;
+            const touch = (ev.changedTouches && ev.changedTouches.length) ? ev.changedTouches[0] : null;
+            if (!touch) return;
+            const dx = touch.clientX - lbStartX;
+            lbStartX = null;
+            lbIsDragging = false;
+
+            if (Math.abs(dx) < 30) return;
+            if (dx < 0) lightboxIndex = (lightboxIndex + 1) % lightboxSlides.length;
+            else lightboxIndex = (lightboxIndex - 1 + lightboxSlides.length) % lightboxSlides.length;
+            renderLightbox();
+        }, { passive: true });
+
+        roomLightboxImg.addEventListener('pointerdown', (ev) => {
+            lbStartX = ev.clientX;
+            lbIsDragging = true;
+        });
+        roomLightboxImg.addEventListener('pointerup', (ev) => {
+            if (!lbIsDragging || lbStartX === null) return;
+            const dx = ev.clientX - lbStartX;
+            lbStartX = null;
+            lbIsDragging = false;
+            if (Math.abs(dx) < 30) return;
+            if (dx < 0) lightboxIndex = (lightboxIndex + 1) % lightboxSlides.length;
+            else lightboxIndex = (lightboxIndex - 1 + lightboxSlides.length) % lightboxSlides.length;
+            renderLightbox();
+        });
+    }
+
+    // Note: navigation controls are conditionally shown in renderLightbox() based on slide count.
+
+    const exclusiveCheck = document.getElementById('is-exclusive');
+
+    const exclusiveSection = document.getElementById('exclusive-rooms-section');
+    const roomCardsContainer = document.getElementById('room-cards-container');
+    const checkinInput = document.getElementById('checkin');
+    const checkoutInput = document.getElementById('checkout');
+    const selectedCountEl = document.getElementById('selected-count');
+    const roomErrorEl = document.getElementById('room-error');
+    const form = document.getElementById('resort-form');
+
+    const exclusivePrice = parseFloat('{{ exclusive_price|default(0) }}') || 0;
+
+
+
+    const totalEl = document.getElementById('booking-total');
+    const roomTotalEl = document.getElementById('room-total');
+    const roomCountSummaryEl = document.getElementById('room-count-summary');
+    const exclusiveTotalEl = document.getElementById('exclusive-total');
+    const appliancesTotalEl = document.getElementById('appliances-total');
+
+    function getNights() {
+        // Handle invalid or missing dates gracefully
+        if (!checkinInput.value || !checkoutInput.value) {
+            return 1;
+        }
+        try {
+            const checkin = new Date(checkinInput.value + 'T00:00:00');
+            const checkout = new Date(checkoutInput.value + 'T00:00:00');
+            
+            // Validate dates are valid
+            if (isNaN(checkin.getTime())) return 1;
+            if (isNaN(checkout.getTime())) return 1;
+            
+            // Handle same day or invalid date range - return 1 as minimum
+            const diffTime = checkout - checkin;
+            const diffDays = diffTime / (1000 * 60 * 60 * 24);
+            
+            // Return minimum 1 night, handle negative (check-out before check-in)
+            return Math.max(1, Math.floor(diffDays));
+        } catch (e) {
+            return 1;
+        }
+    }
+
+    function updateTotal() {
+        let roomSum = 0;
+        let applianceSum = 0;
+        const isExclusive = exclusiveCheck && exclusiveCheck.checked;
+        const nights = getNights();
+        let selectedCount = 0;
+
+        // Rooms from checkbox cards
+        if (!isExclusive && roomCardsContainer) {
+            roomCardsContainer.querySelectorAll('.room-checkbox:checked').forEach(cb => {
+                roomSum += parseFloat(cb.dataset.price || 0);
+                selectedCount++;
+            });
+        }
+
+        // Appliances
+        document.querySelectorAll('input[name^="appliance_selected_"]').forEach(cb => {
+            if (cb.checked) {
+                applianceSum += parseFloat(cb.dataset.price || 0);
+            }
+        });
+
+        const roomTotal = roomSum * nights;
+        const exclusiveTotal = isExclusive ? exclusivePrice * nights : 0;
+        const grandTotal = roomTotal + exclusiveTotal + applianceSum;
+
+        // Update UI text
+        roomTotalEl.textContent = `Rooms: ₱${roomTotal.toLocaleString('en-PH', {minimumFractionDigits: 0})} (${nights} night${nights > 1 ? 's' : ''})`;
+        roomCountSummaryEl.textContent = isExclusive ? 'All rooms' : `${selectedCount} room${selectedCount !== 1 ? 's' : ''}`;
+        if (isExclusive) {
+            exclusiveTotalEl.textContent = `Exclusive: ₱${exclusiveTotal.toLocaleString('en-PH', {minimumFractionDigits: 0})} (${nights} day${nights > 1 ? 's' : ''} @ ₱${exclusivePrice.toLocaleString('en-PH', {minimumFractionDigits: 0})}/day)`;
+        } else {
+            exclusiveTotalEl.textContent = `Exclusive: ₱0`;
+        }
+        appliancesTotalEl.textContent = `Appliances: ₱${applianceSum.toLocaleString('en-PH', {minimumFractionDigits: 0})}`;
+        totalEl.textContent = `₱${grandTotal.toLocaleString('en-PH', {minimumFractionDigits: 0})}`;
+
+        // Update selected count badge
+        if (selectedCountEl) {
+            selectedCountEl.textContent = `${selectedCount} selected`;
+        }
+
+        // Clear error if rooms selected
+        if (roomErrorEl && selectedCount > 0) {
+            roomErrorEl.classList.add('hidden');
+        }
+    }
+
+    // Room card selection visual toggle
+    if (roomCardsContainer) {
+        roomCardsContainer.querySelectorAll('.room-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Let the label naturally toggle the checkbox, then update visuals
+                // Use setTimeout to let the checkbox state update first
+                setTimeout(() => {
+                    syncCardVisuals();
+                    updateTotal();
+                }, 0);
+            });
+        });
+    }
+
+    function syncCardVisuals() {
+        if (!roomCardsContainer) return;
+        roomCardsContainer.querySelectorAll('.room-card').forEach(card => {
+            const cb = card.querySelector('.room-checkbox');
+            const badge = card.querySelector('.check-badge');
+            if (cb.checked) {
+                card.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+                card.classList.remove('border-gray-200', 'bg-white');
+                if (badge) badge.classList.remove('hidden');
+                if (badge) badge.classList.add('flex');
+            } else {
+                card.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+                card.classList.add('border-gray-200', 'bg-white');
+                if (badge) badge.classList.add('hidden');
+                if (badge) badge.classList.remove('flex');
+            }
+        });
+    }
+
+// Add hidden input element reference for storing calculated total
+    const calculatedTotalInput = document.getElementById('calculated-total');
+
+    // Listeners for real-time updates
+    // 'change' event fires when user commits a change (selects date, clicks away)
+    // 'input' event fires immediately as user types/selects
+    [checkinInput, checkoutInput].forEach(input => {
+        input?.addEventListener('change', updateTotal);
+        input?.addEventListener('input', updateTotal);
+    });
+    document.querySelectorAll('input[name^="appliance_selected_"]').forEach(cb => cb.addEventListener('change', updateTotal));
+    if (exclusiveCheck) exclusiveCheck.addEventListener('change', function() {
+        syncExclusiveUi();
+        updateTotal();
+    });
+
+    function syncExclusiveUi() {
+        const isExclusive = !!(exclusiveCheck && exclusiveCheck.checked);
+        if (exclusiveSection) {
+            exclusiveSection.classList.toggle('hidden', !isExclusive);
+        }
+        if (roomCardsContainer) {
+            roomCardsContainer.classList.toggle('opacity-50', isExclusive);
+            roomCardsContainer.classList.toggle('pointer-events-none', isExclusive);
+            roomCardsContainer.querySelectorAll('.room-checkbox').forEach(cb => {
+                cb.disabled = isExclusive;
+            });
+        }
+        if (selectedCountEl) {
+            selectedCountEl.classList.toggle('hidden', isExclusive);
+        }
+    }
+
+    // Form validation
+    if (form) {
+        form.addEventListener('submit', function (event) {
+            const isExclusive = !!(exclusiveCheck && exclusiveCheck.checked);
+            if (!isExclusive) {
+                const selectedRooms = roomCardsContainer ? roomCardsContainer.querySelectorAll('.room-checkbox:checked').length : 0;
+                if (selectedRooms === 0) {
+                    event.preventDefault();
+                    if (roomErrorEl) roomErrorEl.classList.remove('hidden');
+                    roomErrorEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
+
+    // Initialize
+    syncExclusiveUi();
+    syncCardVisuals();
+    updateTotal();
+
+    // Room photo carousels (swipe on mobile, arrows + dots)
+    const carousels = document.querySelectorAll('.room-photo-carousel');
+    carousels.forEach((carousel) => {
+        const slideEls = Array.from(carousel.querySelectorAll('.room-photo-slide'));
+        const dotsWrap = carousel.querySelector('.room-carousel-dots');
+        const prevBtn = carousel.querySelector('.room-carousel-prev');
+        const nextBtn = carousel.querySelector('.room-carousel-next');
+
+        if (!slideEls.length) return;
+
+        // Make room photo thumbnails clickable (opens full-screen viewer)
+        // Note: avoid interfering with checkbox selection by stopping label click propagation.
+        slideEls.forEach((imgEl) => {
+            if (!imgEl) return;
+            // Ensure it doesn't behave like a plain image
+            imgEl.style.cursor = 'zoom-in';
+            imgEl.setAttribute('role', 'button');
+            imgEl.setAttribute('tabindex', '0');
+
+            const openHandler = (e) => {
+                // Prevent the outer label checkbox from toggling when clicking/tapping the photo.
+                e.preventDefault();
+                e.stopPropagation();
+                openRoomLightboxFromThumb(imgEl);
+            };
+
+
+            imgEl.addEventListener('click', openHandler);
+            imgEl.addEventListener('tap', openHandler);
+            imgEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    openHandler(e);
+                }
+            });
+        });
+
+        // Determine available slide count from dots (1..3)
+
+        const dotEls = dotsWrap ? Array.from(dotsWrap.querySelectorAll('.room-carousel-dot')) : [];
+        const maxCount = dotEls.length || slideEls.length;
+
+        const showSlide = (index) => {
+            const idx = Math.max(0, Math.min(index, maxCount - 1));
+
+            // slides are rendered with data-slide-index 0..2 but may be missing; toggle by hidden/block
+            slideEls.forEach((img) => {
+                const si = parseInt(img.dataset.slideIndex || '0', 10);
+                img.classList.toggle('block', si === idx);
+                img.classList.toggle('hidden', si !== idx);
+            });
+
+            // Update dots
+            dotEls.forEach((d) => {
+                const di = parseInt(d.dataset.dotIndex || '0', 10);
+                if (di === idx) {
+                    d.classList.add('bg-blue-600');
+                    d.classList.remove('bg-gray-300');
+                } else {
+                    d.classList.add('bg-gray-300');
+                    d.classList.remove('bg-blue-600');
+                }
+            });
+        };
+
+        let current = 0;
+
+        // Wire dots
+        dotEls.forEach((dot) => {
+            dot.addEventListener('click', () => {
+                const i = parseInt(dot.dataset.dotIndex || '0', 10);
+                current = i;
+                showSlide(current);
+            });
+        });
+
+        // Wire arrows
+        if (prevBtn) prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            current = (current - 1 + maxCount) % maxCount;
+            showSlide(current);
+        });
+        if (nextBtn) nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            current = (current + 1) % maxCount;
+            showSlide(current);
+        });
+
+        // Swipe (touch/pointer) for mobile
+        let startX = null;
+        let isDragging = false;
+
+        const viewport = carousel.querySelector('.aspect-[4/5]');
+        if (viewport) {
+            viewport.addEventListener('touchstart', (ev) => {
+                if (!ev.touches || !ev.touches.length) return;
+                startX = ev.touches[0].clientX;
+                isDragging = true;
+            }, { passive: true });
+
+            viewport.addEventListener('touchend', (ev) => {
+                if (!isDragging || startX === null) return;
+                const touch = (ev.changedTouches && ev.changedTouches.length) ? ev.changedTouches[0] : null;
+                if (!touch) return;
+                const dx = touch.clientX - startX;
+                startX = null;
+                isDragging = false;
+
+                // threshold
+                if (Math.abs(dx) < 30) return;
+                if (dx < 0) {
+                    current = (current + 1) % maxCount;
+                } else {
+                    current = (current - 1 + maxCount) % maxCount;
+                }
+                showSlide(current);
+            }, { passive: true });
+
+            // Also support pointer swipe (optional)
+            viewport.addEventListener('pointerdown', (ev) => {
+                startX = ev.clientX;
+                isDragging = true;
+            });
+            viewport.addEventListener('pointerup', (ev) => {
+                if (!isDragging || startX === null) return;
+                const dx = ev.clientX - startX;
+                startX = null;
+                isDragging = false;
+                if (Math.abs(dx) < 30) return;
+                if (dx < 0) current = (current + 1) % maxCount;
+                else current = (current - 1 + maxCount) % maxCount;
+                showSlide(current);
+            });
+        }
+
+        // Ensure initial slide is visible
+        showSlide(0);
+    });
+
+});
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Isolated calendar init (mirrors bus lifecycle) so unrelated form/lightbox errors
+    // don't block calendar rendering.
+    const calEl = document.getElementById('resort-calendar');
+    const checkinInput = document.getElementById('checkin');
+    const checkoutInput = document.getElementById('checkout');
+    if (!calEl) return;
+
+    let events = [];
+    try {
+        const res = await fetch('/api/availability/resort');
+        const data = await res.json();
+        events = Array.isArray(data.events) ? data.events : [];
+    } catch (e) {
+        events = [];
+    }
+
+    const cal = new FullCalendar.Calendar(calEl, {
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        events: events,
+        displayEventEnd: true,
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        },
+        dateClick: function(info) {
+            if (!checkinInput || !checkoutInput || !info || !info.dateStr) return;
+            checkinInput.value = info.dateStr;
+            const d = new Date(info.dateStr + 'T00:00:00');
+            d.setDate(d.getDate() + 1);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            checkoutInput.value = y + '-' + m + '-' + day;
+            checkinInput.dispatchEvent(new Event('change', { bubbles: true }));
+            checkoutInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    });
+    cal.render();
+});
+</script>
+{% endblock %}
+{% endblock %}
+

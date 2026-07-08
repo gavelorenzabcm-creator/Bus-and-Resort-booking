@@ -1,0 +1,251 @@
+{% extends "admin_base.html" %}
+{% block title %}Site Content - BusResort Admin{% endblock %}
+{% block content %}
+<div class="max-w-6xl">
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold mb-1 text-black">Site Content</h1>
+      <p class="text-sm text-slate-600">Manage homepage branding, footer contact info, social links, and branding. Changes reflect on the public website immediately after saving.</p>
+    </div>
+  </div>
+
+  <form method="POST" enctype="multipart/form-data" class="admin-card p-6 rounded-2xl space-y-10">
+
+    <!-- Save/Cancel/Reset header buttons -->
+    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+      <button type="submit" class="btn-primary px-6 py-3 rounded-lg font-medium">Save</button>
+      <button type="button" onclick="location.reload()" class="btn-secondary px-6 py-3 rounded-lg font-medium">Cancel</button>
+      <button type="reset" class="btn-secondary px-6 py-3 rounded-lg font-medium">Reset</button>
+    </div>
+
+    <!-- Homepage / Hero / Branding -->
+    <section class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-black">Homepage</h2>
+        <p class="text-sm text-slate-600">Hero/landing content shown on the main BusResort homepage.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Site Name</label>
+          <input type="text" name="site_name" value="{{ settings.site_name if settings else 'BusResort' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Contact Email</label>
+          <input type="email" name="contact_email" value="{{ settings.contact_email if settings else '' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Homepage Welcome Message</label>
+          <input type="text" name="homepage_welcome" value="{{ settings.homepage_welcome if settings else '' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Homepage Description</label>
+          <textarea name="homepage_description" rows="3" class="admin-input w-full p-3 rounded-lg">{{ settings.homepage_description if settings else '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Homepage Image</label>
+          <input type="file" name="homepage_image" accept="image/jpeg,image/jpg,image/png,image/webp" class="admin-input w-full p-3 rounded-lg" onchange="previewImage(event,'preview_homepage_image')">
+          <div id="preview_homepage_image" class="mt-3"></div>
+          {% if settings and settings.homepage_image %}
+            <div class="mt-3 flex items-center gap-4">
+              <img src="/uploads/{{ settings.homepage_image.split('/')[-1] if settings.homepage_image.startswith('uploads/') else settings.homepage_image }}" alt="Homepage" class="h-24 object-contain rounded">
+              <button type="button" onclick="removeImage('homepage_image')" class="btn-danger px-3 py-1 rounded text-sm">Remove</button>
+            </div>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Resort Image</label>
+          <input type="file" name="resort_image" accept="image/jpeg,image/jpg,image/png,image/webp" class="admin-input w-full p-3 rounded-lg" onchange="previewImage(event,'preview_resort_image')">
+          <div id="preview_resort_image" class="mt-3"></div>
+          {% if settings and settings.resort_image %}
+            <div class="mt-3 flex items-center gap-4">
+              <img src="/uploads/{{ settings.resort_image.split('/')[-1] if settings.resort_image.startswith('uploads/') else settings.resort_image }}" alt="Resort" class="h-24 object-contain rounded">
+              <button type="button" onclick="removeImage('resort_image')" class="btn-danger px-3 py-1 rounded text-sm">Remove</button>
+            </div>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Bus Page Image</label>
+          <input type="file" name="bus_image" accept="image/jpeg,image/jpg,image/png,image/webp" class="admin-input w-full p-3 rounded-lg" onchange="previewImage(event,'preview_bus_image')">
+          <div id="preview_bus_image" class="mt-3"></div>
+          {% if settings and settings.bus_image %}
+            <div class="mt-3 flex items-center gap-4">
+              <img src="/uploads/{{ settings.bus_image.split('/')[-1] if settings.bus_image.startswith('uploads/') else settings.bus_image }}" alt="Bus" class="h-24 object-contain rounded">
+              <button type="button" onclick="removeImage('bus_image')" class="btn-danger px-3 py-1 rounded text-sm">Remove</button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Information -->
+    <section class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-black">Contact Information</h2>
+        <p class="text-sm text-slate-600">Footer business contact details.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Business Name *</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="business_name" value="{{ contact.business_name if contact else '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Business Description *</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="business_tagline" value="{{ contact.business_tagline if contact else '' }}" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Contact Email *</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="email" name="email" value="{{ contact.email if contact else '' }}" placeholder="name@example.com" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Mobile Number *</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="tel" name="mobile" value="{{ contact.mobile if contact else '' }}" placeholder="+63 ..." />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Google Maps Link *</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="url" name="google_maps_link" value="{{ contact.google_maps_link if contact else '' }}" placeholder="https://maps.google.com/..." />
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Social Media -->
+    <section class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-black">Social Media</h2>
+        <p class="text-sm text-slate-600">Empty links will hide icons on the main website.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="block text-sm font-medium text-black mb-2">Facebook URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="facebook_url" value="{{ contact.facebook_url if contact else '' }}" placeholder="https://facebook.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">Instagram URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="instagram_url" value="{{ contact.instagram_url if contact else '' }}" placeholder="https://instagram.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">X (Twitter) URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="x_url" value="{{ contact.x_url if contact else '' }}" placeholder="https://x.com/..." /></div>
+        <div><label class="block text-sm font-medium text-black mb-2">TikTok URL</label><input class="admin-input w-full p-3 rounded-lg" type="url" name="tiktok_url" value="{{ contact.tiktok_url if contact else '' }}" placeholder="https://tiktok.com/..." /></div>
+      </div>
+    </section>
+
+    <!-- Footer Settings / Branding -->
+    <section class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-black">Footer Settings</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Footer Description</label>
+          <textarea class="admin-input w-full p-3 rounded-lg" name="footer_description" rows="3">{{ footer.footer_description if footer else '' }}</textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Contact Section Title</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="contact_section_title" value="{{ footer.contact_section_title if footer else '' }}" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Copyright Text</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="text" name="copyright_text" value="{{ footer.copyright_text if footer else '' }}" placeholder="e.g., © 2026 BusResort" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-black mb-2">Terms & Conditions Link</label>
+          <input class="admin-input w-full p-3 rounded-lg" type="url" name="terms_href" value="{{ footer.terms_href if footer else '' }}" placeholder="https://..." />
+        </div>
+      </div>
+    </section>
+
+    <!-- Booking Success Popup Settings -->
+    <section class="space-y-6">
+      <div>
+        <h2 class="text-lg font-semibold text-black">Booking Success Message</h2>
+        <p class="text-sm text-slate-600">Customize the popup shown immediately after a successful bus/resort booking submission.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Popup Title</label>
+          <input type="text" name="booking_success_popup_title" value="{{ settings.booking_success_popup_title if settings else 'Booking Submitted Successfully!' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">Show Success Icon</label>
+          <label class="flex items-center gap-3 mt-3 text-sm text-black">
+            <input type="checkbox" name="booking_success_popup_show_icon" value="on" {% if settings and (settings.booking_success_popup_show_icon in [1,'1',True,'true']) %}checked{% endif %} class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span>Display icon</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-black mb-2">Success Message</label>
+        <textarea name="booking_success_popup_message" rows="5" class="admin-input w-full p-3 rounded-lg">{{ settings.booking_success_popup_message if settings else 'Thank you for choosing BusResort!\nYour booking has been successfully submitted and is now awaiting confirmation from our administrator. We appreciate your trust in our service and look forward to serving you. Please keep your booking reference number for future inquiries.' }}</textarea>
+        <p class="text-xs text-slate-500 mt-2">Use line breaks (\n) if needed.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">OK Button Text</label>
+          <input type="text" name="booking_success_popup_ok_text" value="{{ settings.booking_success_popup_ok_text if settings else 'OK' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-black mb-2">View Booking Button Text</label>
+          <input type="text" name="booking_success_popup_view_text" value="{{ settings.booking_success_popup_view_text if settings else 'View My Booking' }}" class="admin-input w-full p-3 rounded-lg">
+        </div>
+
+        <div class="md:col-span-1">
+          <div class="mt-6 p-4 rounded-xl border border-slate-200 bg-white">
+            <p class="text-sm font-semibold text-black">Reference number</p>
+            <p class="text-xs text-slate-600 mt-1">Popup automatically shows the inserted booking ID as the reference number.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Branding section placeholder for requirement parity -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold text-black">Branding</h2>
+      <p class="text-sm text-slate-600">Public footer uses stored CMS values.</p>
+      <button type="submit" class="btn-primary px-6 py-3 rounded-lg font-medium">Save</button>
+      <button type="button" onclick="location.reload()" class="btn-secondary px-6 py-3 rounded-lg font-medium">Cancel</button>
+      <button type="reset" class="btn-secondary px-6 py-3 rounded-lg font-medium">Reset</button>
+    </div>
+  </form>
+</div>
+
+<!-- Hidden forms for image removal -->
+<form id="removeForm_homepage_image" method="POST" action="/admin/content/remove-image/homepage_image" class="hidden"></form>
+<form id="removeForm_resort_image" method="POST" action="/admin/content/remove-image/resort_image" class="hidden"></form>
+<form id="removeForm_bus_image" method="POST" action="/admin/content/remove-image/bus_image" class="hidden"></form>
+
+<script>
+function removeImage(imageType) {
+  if (confirm('Are you sure you want to remove this ' + imageType.replace('_image', '') + ' image?')) {
+    document.getElementById('removeForm_' + imageType).submit();
+  }
+}
+
+function previewImage(event, containerId) {
+  const file = event.target.files && event.target.files[0];
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = document.createElement('img');
+  img.src = url;
+  img.className = 'h-24 object-contain rounded';
+  container.appendChild(img);
+}
+
+</script>
+{% endblock %}
+

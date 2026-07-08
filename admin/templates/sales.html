@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Sales Reports{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-8">Sales Reports</h1>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Total Revenue</div>
+        <div class="text-4xl font-bold text-green-600">₱{{ "%.2f"|format(stats.total_revenue) }}</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Bus Revenue</div>
+        <div class="text-4xl font-bold text-blue-600">₱{{ "%.2f"|format(stats.bus_revenue) }}</div>
+        <div class="text-sm text-gray-500 mt-1">{{ stats.total_bus }} bookings</div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <div class="text-gray-500 text-sm">Resort Revenue</div>
+        <div class="text-4xl font-bold text-purple-600">₱{{ "%.2f"|format(stats.resort_revenue) }}</div>
+        <div class="text-sm text-gray-500 mt-1">{{ stats.total_resort }} bookings</div>
+    </div>
+</div>
+
+<!-- Detailed Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Booking Overview</h2>
+        <table class="w-full">
+            <tr class="border-b">
+                <td class="py-2">Total Bookings</td>
+                <td class="py-2 text-right font-bold">{{ stats.total_bookings }}</td>
+            </tr>
+            <tr class="border-b">
+                <td class="py-2">Active Bookings</td>
+                <td class="py-2 text-right font-bold text-green-600">{{ stats.active_bookings }}</td>
+            </tr>
+            <tr class="border-b">
+                <td class="py-2">Bus Bookings</td>
+                <td class="py-2 text-right">{{ stats.total_bus }}</td>
+            </tr>
+            <tr>
+                <td class="py-2">Resort Bookings</td>
+                <td class="py-2 text-right">{{ stats.total_resort }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Revenue Breakdown</h2>
+        <table class="w-full">
+            <tr class="border-b">
+                <td class="py-2">Bus Revenue</td>
+                <td class="py-2 text-right font-bold">₱{{ "%.2f"|format(stats.bus_revenue) }}</td>
+            </tr>
+            <tr class="border-b">
+                <td class="py-2">Resort Revenue</td>
+                <td class="py-2 text-right font-bold">₱{{ "%.2f"|format(stats.resort_revenue) }}</td>
+            </tr>
+            <tr class="bg-green-50">
+                <td class="py-3 font-bold">Total Revenue</td>
+                <td class="py-3 text-right font-bold text-green-600">₱{{ "%.2f"|format(stats.total_revenue) }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="mt-8 text-center">
+    <a href="{{ url_for('dashboard') }}" class="text-blue-600 hover:underline">← Back to Dashboard</a>
+</div>
+{% endblock %}

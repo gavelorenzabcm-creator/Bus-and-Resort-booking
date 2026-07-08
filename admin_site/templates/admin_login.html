@@ -1,0 +1,23 @@
+{% extends "admin_base.html" %}
+{% block title %}Admin Login - BusResort{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto mt-12">
+    <div class="admin-card p-10 rounded-2xl shadow-xl">
+        <h1 class="text-3xl font-bold text-center mb-8 text-black">Admin Login</h1>
+        <form method="POST" action="/admin" id="admin-login-form" onsubmit="document.getElementById('login-btn').disabled=true; document.getElementById('login-btn').textContent='Logging in...'; return true;">
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-black mb-2">Username *</label>
+                <input type="text" name="username" required class="admin-input w-full p-3 rounded-lg" autofocus>
+            </div>
+            <div class="mb-8">
+                <label class="block text-sm font-medium text-black mb-2">Password *</label>
+                <input type="password" name="password" required class="admin-input w-full p-3 rounded-lg">
+            </div>
+            <button type="submit" id="login-btn" class="btn-primary w-full py-3 px-6 rounded-lg font-medium">Login to Admin</button>
+        </form>
+        <div class="mt-6 p-4 admin-card-alt rounded-lg border border-gray-300">
+            <p class="text-sm text-black font-medium">Default Admin: <strong>admin</strong> / <strong>admin123</strong></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

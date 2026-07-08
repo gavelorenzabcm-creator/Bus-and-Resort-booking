@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}
+{% block title %}Resort Requests - BusResort{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+    <h1 class="text-3xl font-bold text-black">Resort Booking Requests</h1>
+    <a href="/dashboard" class="text-black hover:text-black font-medium">← Back to Dashboard</a>
+</div>
+
+<div class="admin-card rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-black">
+            <thead class="admin-table-header">
+                <tr>
+                    <th class="p-3 text-left font-medium">Name</th>
+                    <th class="p-3 text-left font-medium">Contact</th>
+                    <th class="p-3 text-left font-medium">Email</th>
+                    <th class="p-3 text-left font-medium">Check-in</th>
+                    <th class="p-3 text-left font-medium">Check-out</th>
+                    <th class="p-3 text-left font-medium">Guests</th>
+                    <th class="p-3 text-left font-medium">Room Type</th>
+                    <th class="p-3 text-left font-medium">Payment</th>
+                    <th class="p-3 text-left font-medium">Status</th>
+                    <th class="p-3 text-left font-medium">PHP/Night</th>
+                    <th class="p-3 text-left font-medium">Total Cost</th>
+                    <th class="p-3 text-left font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if resort_bookings %}
+                    {% for r in resort_bookings %}
+                        <tr class="admin-table-row">
+                            <td class="p-3">{{ r.name }}</td>
+                            <td class="p-3">{{ r.contact }}</td>
+                            <td class="p-3">{{ r.email }}</td>
+                            <td class="p-3">{{ r.checkin }} {{ r.checkin_time or '14:00' }}</td>
+                            <td class="p-3">{{ r.checkout }} {{ r.checkout_time or '12:00' }}</td>
+                            <td class="p-3">{{ r.guests }}</td>
+                            <td class="p-3">{{ r.room_type }}</td>
+                            <td class="p-3">{{ r.payment_method or 'Cash' }}</td>
+                            <td class="p-3">
+                                <span class="status-badge px-2 py-1 rounded-full text-xs font-medium">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td class="p-3">PHP {{ '{:,.0f}'.format(r.price_per_night or 0) }}</td>
+                            <td class="p-3">PHP {{ '{:,.0f}'.format(r.total_cost or r.price or 0) }}</td>
+                            <td class="p-3">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    {% if r.status != 'Cancelled' %}
+                                    <form method="POST" action="/confirm/resort/{{ r.id }}">
+                                        <button type="submit" class="btn-muted px-3 py-1 rounded text-sm">Confirm</button>
+                                    </form>
+                                    {% endif %}
+                                    <a href="/edit/resort/{{ r.id }}" class="btn-secondary px-3 py-1 rounded text-sm inline-block">Edit</a>
+                                    {% if r.status != 'Cancelled' %}
+<form method="POST" action="/cancel/resort/{{ r.id }}" class="cancel-resort-form" onsubmit="event.preventDefault();">
+                                        <button type="button" class="btn-danger px-3 py-1 rounded text-sm" data-cancel-booking data-cancel-url="/cancel/resort/{{ r.id }}" data-row-selector="tr.admin-table-row">Cancel</button>
+                                    </form>
+                                    {% endif %}
+                                    <form method="POST" action="/delete/resort/{{ r.id }}" onsubmit="return confirm('Delete this resort booking?');">
+                                        <button type="submit" class="btn-danger px-3 py-1 rounded text-sm">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="12" class="p-8 text-center text-gray-500">No resort requests yet.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
