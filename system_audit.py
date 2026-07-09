@@ -5,7 +5,8 @@ Checks all routes, templates, database, and common issues
 """
 import os
 import sys
-import sqlite3
+# sqlite3 removed: this audit tool now uses the centralized DB module
+
 import importlib.util
 from pathlib import Path
 
@@ -24,13 +25,19 @@ def check_database():
         return False
     
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+        from shared.db_connection import get_db_connection, DB_ENGINE
+        conn = get_db_connection()
         cursor = conn.cursor()
+
         
-        # Get all tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = [row['name'] for row in cursor.fetchall()]
+        # Get all tables (engine-agnostic)
+        cursor.execute("""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
+            """)
+        tables = [row[0] for row in cursor.fetchall()]
+
         print(f"✅ Database connected. Tables: {len(tables)}")
         
         # Check each table
@@ -40,6 +47,7 @@ def check_database():
                 print(f"   📊 {table}: {count} records")
             except Exception as e:
                 print(f"   ❌ {table}: Error - {e}")
+
         
         # Check for orphaned records
         print("\n   🔍 Checking data integrity...")
@@ -63,6 +71,7 @@ def check_database():
     except Exception as e:
         print(f"❌ Database error: {e}")
         return False
+
 
 def check_templates():
     """Check all templates for common issues."""
@@ -127,27 +136,39 @@ def check_static_files():
         files = list(upload_folder.iterdir())
         print(f"✅ Upload folder exists: {len(files)} files")
         # Check for orphaned files
-        db_path = os.path.join(os.path.dirname(__file__), 'bookings.db')
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        # Get all image paths from database
-        used_images = set()
+        # Use the centralized DB connection (Postgres on Vercel, SQLite locally)
+        conn = None
         try:
-            rooms = cursor.execute("SELECT image_path FROM ResortRooms WHERE image_path IS NOT NULL").fetchall()
-            for r in rooms:
-                if r['image_path']:
-                    used_images.add(os.path.basename(r['image_path']))
-            
-            settings = cursor.execute("SELECT homepage_image, resort_image, bus_image FROM WebsiteSettings WHERE id = 1").fetchone()
-            if settings:
-                for img in [settings['homepage_image'], settings['resort_image'], settings['bus_image']]:
-                    if img:
-                        used_images.add(os.path.basename(img))
-        except:
-            pass
-        conn.close()
+            from shared.db_connection import get_db_connection
+            conn = get_db_connection(timeout=5.0)
+            cursor = conn.cursor()
+
+            # Get all image paths from database
+            used_images = set()
+            try:
+                rooms = cursor.execute(
+                    "SELECT image_path FROM ResortRooms WHERE image_path IS NOT NULL"
+                ).fetchall()
+                for r in rooms:
+                    if r['image_path']:
+                        used_images.add(os.path.basename(r['image_path']))
+
+                settings = cursor.execute(
+                    "SELECT homepage_image, resort_image, bus_image FROM WebsiteSettings WHERE id = 1"
+                ).fetchone()
+                if settings:
+                    for img in [settings['homepage_image'], settings['resort_image'], settings['bus_image']]:
+                        if img:
+                            used_images.add(os.path.basename(img))
+            except Exception:
+                pass
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
         
         orphaned = [f.name for f in files if f.name not in used_images and f.name not in ['BUS.jpg', 'MBR.jpg']]
         if orphaned:
@@ -168,7 +189,7 @@ def check_imports():
         'flask',
         'werkzeug',
         'jinja2',
-        'sqlite3',
+
         'openpyxl',
     ]
     

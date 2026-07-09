@@ -1,11 +1,13 @@
-import sqlite3
+# sqlite3 removed: utils are now engine-agnostic and work with dict/real cursors
+
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 
 
-def create_notification(conn: sqlite3.Connection, message: str, ntype: str):
+def create_notification(conn, message: str, ntype: str):
+
     """Create admin notification for new booking/review"""
     conn.execute(
         "INSERT INTO Notification (message, type) VALUES (?, ?)",
@@ -13,7 +15,8 @@ def create_notification(conn: sqlite3.Connection, message: str, ntype: str):
     )
 
 
-def safe_create_notification(conn: sqlite3.Connection, message: str, ntype: str):
+def safe_create_notification(conn, message: str, ntype: str):
+
     """Create admin notification, catching errors so the main transaction isn't affected."""
     try:
         create_notification(conn, message, ntype)
@@ -21,7 +24,8 @@ def safe_create_notification(conn: sqlite3.Connection, message: str, ntype: str)
         logger.error("Failed to create notification (%s): %s", ntype, exc, exc_info=True)
 
 
-def get_notifications(conn: sqlite3.Connection):
+def get_notifications(conn):
+
     """Get unread_count and all notifications"""
     cursor = conn.execute("SELECT COUNT(*) FROM Notification WHERE is_read = 0")
     unread_count = cursor.fetchone()[0]
@@ -30,7 +34,8 @@ def get_notifications(conn: sqlite3.Connection):
     return unread_count, notifications
 
 
-def log_cancellation(conn: sqlite3.Connection, booking_type: str, booking_id: int,
+def log_cancellation(conn, booking_type: str, booking_id: int,
+
                      customer_name: str, travel_date: str, cancelled_by: str, reason: str = ""):
     """Log a cancellation action for audit/history tracking."""
     try:

@@ -20,7 +20,15 @@ Usage:
 from __future__ import annotations
 
 import os
+# sqlite3 is used only for optional local development fallback.
+# Import only in fallback paths (kept for local SQLite dev support).
 import sqlite3
+
+
+# NOTE: PostgreSQL mode does not use this module for DB connections.
+# It remains only to compute the local SQLite DB path when DATABASE_URL is missing.
+
+
 from pathlib import Path
 from typing import Optional
 

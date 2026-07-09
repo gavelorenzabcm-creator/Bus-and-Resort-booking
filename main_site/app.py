@@ -7,7 +7,7 @@ import os
 import sys
 # Fix shared import path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import sqlite3
+
 from shared import *
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
@@ -390,8 +390,9 @@ def bus_respond(booking_id: int):
         conn.commit()
         flash(f"Bus booking {new_status.lower()} successfully.", "success")
 
-    except sqlite3.OperationalError as exc:
+    except Exception as exc:
         conn.rollback()
+
         logger.error("Database error in bus_respond for booking %s: %s", booking_id, exc, exc_info=True)
         flash("A database error occurred. Please try again in a moment.", "error")
     except Exception as exc:
@@ -451,7 +452,8 @@ def resort_respond(booking_id: int):
         conn.commit()
         flash(f"Resort booking {new_status.lower()} successfully.", "success")
 
-    except sqlite3.OperationalError as exc:
+    except Exception as exc:
+
         conn.rollback()
         logger.error("Database error in resort_respond for booking %s: %s", booking_id, exc, exc_info=True)
         flash("A database error occurred. Please try again in a moment.", "error")

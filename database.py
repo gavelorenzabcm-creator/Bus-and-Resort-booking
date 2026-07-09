@@ -1,82 +1,105 @@
 """
 Database Module - All database operations in one place
 """
-from asyncio import timeout
-import sqlite3
-from config import DB_TIMEOUT
-from db_path import DB_PATH, ensure_db_initialized
+from __future__ import annotations
+
+from __future__ import annotations
+
+import os
+import re
+from typing import Any, Optional
+
+from shared.db_connection import DB_ENGINE, get_db_connection
+
+
+def _normalize_placeholders(sql: str) -> str:
+    """Convert SQLite-style placeholders (? placeholders) to PostgreSQL (%s).
+
+    This keeps existing SQL in the app working while we migrate.
+    """
+    if DB_ENGINE != "postgres":
+        return sql
+
+    # Only replace plain ? tokens that are used as placeholders.
+    # This heuristic is adequate for the current codebase.
+    return re.sub(r"\?(?![\w\d])", "%s", sql)
+
 
 class Database:
-    """Simple database wrapper with connection management"""
-    
+    """Centralized DB wrapper.
+
+    - PostgreSQL: uses psycopg2 RealDictCursor (dict rows)
+    - SQLite fallback: uses sqlite3 with row access by column name
+
+    Important: callers provide SQL using '?' placeholders (legacy).
+    For Postgres, we convert '?' to '%s'.
+    """
+
     @staticmethod
-    def get_connection():
-        """Get database connection with proper settings"""
-        ensure_db_initialized()
-        conn = sqlite3.connect(DB_PATH, timeout=DB_TIMEOUT)
-        conn.row_factory = sqlite3.Row
-        conn.execute('PRAGMA journal_mode=WAL')
-        conn.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
-        return conn
-    
-    @staticmethod
-    def execute(query, params=(), fetch_one=False, fetch_all=False):
-        """Execute query with automatic connection management"""
+    def execute(sql: str, params: tuple = (), fetch_one: bool = False, fetch_all: bool = False):
+        sql = _normalize_placeholders(sql)
         conn = None
         try:
-            conn = Database.get_connection()
-            cursor = conn.execute(query, params)
-            
-            if fetch_one:
-                result = cursor.fetchone()
-            elif fetch_all:
-                result = cursor.fetchall()
-            else:
+            conn = get_db_connection()
+
+            # psycopg2 uses cursors; sqlite3 supports conn.execute.
+            # Using cursor() for both improves consistency.
+            with conn.cursor() as cur:
+                cur.execute(sql, params)
+
+                if fetch_one:
+                    return cur.fetchone()
+                if fetch_all:
+                    return cur.fetchall()
+
                 conn.commit()
-                result = cursor.lastrowid
-            
-            return result
-        except Exception as e:
-            print(f"[DB] Error executing query: {e}")
-            return None
+                # For non-select operations, return nothing.
+                return None
+        except Exception:
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            raise
         finally:
             if conn:
                 try:
                     conn.close()
-                except:
+                except Exception:
                     pass
-    
+
     @staticmethod
-    def fetch_one(query, params=()):
-        """Fetch single row"""
-        return Database.execute(query, params, fetch_one=True)
-    
+    def fetch_one(sql: str, params: tuple = ()):
+        return Database.execute(sql, params=params, fetch_one=True)
+
     @staticmethod
-    def fetch_all(query, params=()):
-        """Fetch all rows"""
-        return Database.execute(query, params, fetch_all=True)
-    
+    def fetch_all(sql: str, params: tuple = ()):
+        return Database.execute(sql, params=params, fetch_all=True)
+
     @staticmethod
-    def insert(table, data):
-        """Insert data into table"""
-        columns = ', '.join(data.keys())
-        placeholders = ', '.join(['?' for _ in data])
-        query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-        return Database.execute(query, tuple(data.values()))
-    
+    def insert(table: str, data: dict[str, Any]):
+        cols = ", ".join(data.keys())
+        placeholders = ", ".join(["?" for _ in data])
+        sql = f"INSERT INTO {table} ({cols}) VALUES ({placeholders}) RETURNING id"
+        row = Database.fetch_one(sql, tuple(data.values()))
+        # psycopg2 RETURNING id -> dict row has key 'id'
+        if not row:
+            return None
+        return row["id"] if isinstance(row, dict) else row[0]
+
     @staticmethod
-    def update(table, data, where_clause, where_params):
-        """Update table with data"""
-        set_clause = ', '.join([f"{k} = ?" for k in data.keys()])
-        query = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
-        params = tuple(data.values()) + where_params
-        Database.execute(query, params)
-    
+    def update(table: str, data: dict[str, Any], where_clause: str, where_params: tuple):
+        set_clause = ", ".join([f"{k} = ?" for k in data.keys()])
+        sql = f"UPDATE {table} SET {set_clause} WHERE {where_clause}"
+        params = tuple(data.values()) + tuple(where_params)
+        Database.execute(sql, params=params)
+
     @staticmethod
-    def delete(table, where_clause, where_params):
-        """Delete from table"""
-        query = f"DELETE FROM {table} WHERE {where_clause}"
-        Database.execute(query, where_params)
+    def delete(table: str, where_clause: str, where_params: tuple):
+        sql = f"DELETE FROM {table} WHERE {where_clause}"
+        Database.execute(sql, params=tuple(where_params))
+
 
 # Quick access functions
 def get_stats():
