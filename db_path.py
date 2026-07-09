@@ -101,9 +101,14 @@ def _try_create_db_file(db_path: str) -> None:
 def ensure_db_initialized() -> None:
     """Ensure DB directory/file exists and schema init runs before queries.
 
+    In PostgreSQL mode (DATABASE_URL set), this is a no-op because PostgreSQL
+    manages its own storage and does not use SQLite.
+
     Important: do NOT call shared.db.init_db() here, because shared.db.init_db()
     calls get_db_connection(), which calls ensure_db_initialized() again.
     That creates infinite recursion.
     """
+    if os.getenv("DATABASE_URL"):
+        return
     _try_create_db_file(DB_PATH)
 

@@ -537,6 +537,9 @@ def bus():
 
 @app.route("/resort", methods=["GET", "POST"])
 def resort():
+    from shared.db_connection import get_db_connection as _ggc
+    import logging
+    logging.getLogger(__name__).info("[ROUTE ENTRY] /resort got_connection=%s get_db_connection_from=%s", type(_ggc()).__name__, _ggc.__module__)
     if request.method == "POST":
         form = request.form
         conn = get_db_connection()
@@ -719,7 +722,10 @@ def resort():
 
 @app.route("/api/availability/bus")
 def bus_availability():
+    import logging
     conn = get_db_connection()
+    logging.getLogger(__name__).info("[ROUTE ENTRY] /api/availability/bus conn_type=%s get_db_connection_from=%s", type(conn).__name__, get_db_connection.__module__)
+
     rows = conn.execute(
         "SELECT name, datetime, checkin, checkout, status FROM BusBookings WHERE status IN ('Pending','Confirmed')"
     ).fetchall()
@@ -800,6 +806,10 @@ def booking_success():
 @app.route("/feedback", methods=["GET", "POST"])
 
 def feedback():
+    import logging
+    conn = get_db_connection()
+    logging.getLogger(__name__).info("[ROUTE ENTRY] /feedback conn_type=%s get_db_connection_from=%s", type(conn).__name__, get_db_connection.__module__)
+    conn.close()
     feedback_list = []
     
     if request.method == "POST":

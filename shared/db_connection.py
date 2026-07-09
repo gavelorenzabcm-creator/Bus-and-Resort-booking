@@ -61,10 +61,53 @@ def get_db_connection(timeout: float = 30.0):
 
     Note: `timeout` is ignored in PostgreSQL mode (handled by psycopg2).
     """
-    if DB_ENGINE == "postgres":
-        return _init_postgres()
+    # Temporary runtime diagnostics (for Vercel log inspection)
+    import inspect
+    import logging
 
-    return _init_sqlite()
+    calling = None
+    try:
+        frame = inspect.currentframe()
+        if frame is not None and frame.f_back is not None:
+            calling = f"{frame.f_back.f_globals.get('__name__','?')}.{frame.f_back.f_code.co_name}"
+    except Exception:
+        calling = None
+
+    has_url = bool(DATABASE_URL)
+
+    if DB_ENGINE == "postgres":
+        conn = _init_postgres()
+        try:
+            conn_cls = conn.__class__
+            conn_name = getattr(conn_cls, '__name__', str(conn_cls))
+            if conn_name and conn_name.lower().find('connection') == -1:
+                # keep it compact but still useful
+                pass
+        except Exception:
+            conn_name = type(conn).__name__
+
+        logging.getLogger(__name__).info(
+            "[DB DEBUG] DATABASE_URL=%s ENGINE=PostgreSQL CONNECTION_CLASS=%s CALLING=%s",
+            has_url,
+            type(conn).__module__ + '.' + type(conn).__name__,
+            calling,
+        )
+        return conn
+
+    conn = _init_sqlite()
+    try:
+        conn_fq = type(conn).__module__ + '.' + type(conn).__name__
+    except Exception:
+        conn_fq = type(conn).__name__
+
+    logging.getLogger(__name__).info(
+        "[DB DEBUG] DATABASE_URL=%s ENGINE=SQLite CONNECTION_CLASS=%s CALLING=%s",
+        has_url,
+        conn_fq,
+        calling,
+    )
+    return conn
+
 
 
 

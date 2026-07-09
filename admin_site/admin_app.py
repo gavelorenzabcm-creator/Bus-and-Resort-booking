@@ -71,6 +71,7 @@ def health_check():
     return jsonify({"status": "ok", "service": "busresort-admin"}), 200
 
 
+
 def _get_room_pricing_map(conn) -> dict[str, float]:
     rows = conn.execute("SELECT room_type, price_per_night FROM RoomPricing").fetchall()
     return {r["room_type"]: float(r["price_per_night"]) for r in rows}
@@ -445,6 +446,11 @@ def admin_login_required(view_func):
 
 @app.route("/")
 def admin_root():
+    import logging
+    from shared import get_db_connection
+    conn = get_db_connection()
+    logging.getLogger(__name__).info("[ROUTE ENTRY] /admin entry conn_type=%s get_db_connection_from=%s", type(conn).__name__, get_db_connection.__module__)
+    conn.close()
     return redirect(url_for("admin_login"))
 
 
