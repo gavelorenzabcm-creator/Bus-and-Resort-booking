@@ -1265,7 +1265,7 @@ def admin_add_room():
         else:
             # Keep legacy single image_path for now: slot 0 if provided.
             legacy_image = photo_paths[0] if photo_paths[0] else ""
-            conn.execute(
+            cursor = conn.execute(
                 """
                 INSERT INTO ResortRooms (name, room_type, capacity, image_path)
                 VALUES (?, ?, ?, ?)
@@ -1273,10 +1273,7 @@ def admin_add_room():
                 """,
                 (name, room_type, capacity, legacy_image),
             )
-            room_id = conn.fetchone()["id"] if hasattr(conn, 'fetchone') else conn.execute(
-                """SELECT id FROM ResortRooms WHERE name = ? ORDER BY id DESC LIMIT 1""",
-                (name,),
-            ).fetchone()["id"]
+            room_id = cursor.fetchone()["id"]
             msg = f"Room '{name}' added."
 
 
