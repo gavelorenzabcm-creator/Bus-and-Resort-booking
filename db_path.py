@@ -20,9 +20,12 @@ Usage:
 from __future__ import annotations
 
 import os
-# sqlite3 is used only for optional local development fallback.
-# Import only in fallback paths (kept for local SQLite dev support).
-import sqlite3
+
+# sqlite3 is intentionally imported only for local-development SQLite fallback.
+# In production (DATABASE_URL present), code paths must not reach this import.
+if not os.getenv("DATABASE_URL"):
+    import sqlite3
+
 
 
 # NOTE: PostgreSQL mode does not use this module for DB connections.

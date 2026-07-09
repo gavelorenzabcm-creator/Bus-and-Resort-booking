@@ -1260,11 +1260,19 @@ def admin_add_room():
             # Keep legacy single image_path for now: slot 0 if provided.
             legacy_image = photo_paths[0] if photo_paths[0] else ""
             conn.execute(
-                "INSERT INTO ResortRooms (name, room_type, capacity, image_path) VALUES (?, ?, ?, ?)",
+                """
+                INSERT INTO ResortRooms (name, room_type, capacity, image_path)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """,
                 (name, room_type, capacity, legacy_image),
             )
-            room_id = conn.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+            room_id = conn.fetchone()["id"] if hasattr(conn, 'fetchone') else conn.execute(
+                """SELECT id FROM ResortRooms WHERE name = ? ORDER BY id DESC LIMIT 1""",
+                (name,),
+            ).fetchone()["id"]
             msg = f"Room '{name}' added."
+
 
         # Persist gallery photos to ResortRoomPhotos (ordered 0..2)
         for slot_index, path in enumerate(photo_paths):
@@ -1577,11 +1585,24 @@ def _load_site_content_records(conn):
     contact = conn.execute("SELECT * FROM CMS_ContactInfo WHERE id = 1").fetchone()
     footer = conn.execute("SELECT * FROM CMS_FooterContent WHERE id = 1").fetchone()
     if contact is None:
-        conn.execute("INSERT OR IGNORE INTO CMS_ContactInfo (id) VALUES (1)")
+        conn.execute(
+            """
+            INSERT INTO CMS_ContactInfo (id)
+            VALUES (1)
+            ON CONFLICT (id) DO NOTHING
+            """
+        )
         contact = conn.execute("SELECT * FROM CMS_ContactInfo WHERE id = 1").fetchone()
     if footer is None:
-        conn.execute("INSERT OR IGNORE INTO CMS_FooterContent (id) VALUES (1)")
+        conn.execute(
+            """
+            INSERT INTO CMS_FooterContent (id)
+            VALUES (1)
+            ON CONFLICT (id) DO NOTHING
+            """
+        )
         footer = conn.execute("SELECT * FROM CMS_FooterContent WHERE id = 1").fetchone()
+
     return settings, contact, footer
 
 
@@ -1851,12 +1872,25 @@ def admin_contact_info():
         footer = conn.execute("SELECT * FROM CMS_FooterContent WHERE id = 1").fetchone()
 
         if contact is None:
-            contact = conn.execute("INSERT OR IGNORE INTO CMS_ContactInfo (id) VALUES (1)")
+            conn.execute(
+                """
+                INSERT INTO CMS_ContactInfo (id)
+                VALUES (1)
+                ON CONFLICT (id) DO NOTHING
+                """
+            )
             contact = conn.execute("SELECT * FROM CMS_ContactInfo WHERE id = 1").fetchone()
 
         if footer is None:
-            conn.execute("INSERT OR IGNORE INTO CMS_FooterContent (id) VALUES (1)")
+            conn.execute(
+                """
+                INSERT INTO CMS_FooterContent (id)
+                VALUES (1)
+                ON CONFLICT (id) DO NOTHING
+                """
+            )
             footer = conn.execute("SELECT * FROM CMS_FooterContent WHERE id = 1").fetchone()
+
 
         def _clean_text(val: str | None) -> str:
             return (val or "").strip()

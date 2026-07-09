@@ -58,11 +58,14 @@ def get_db_connection(timeout: float = 30.0):
     Enforced rules:
     - If DATABASE_URL is configured: use PostgreSQL only.
     - Otherwise: use local SQLite for development only.
+
+    Note: `timeout` is ignored in PostgreSQL mode (handled by psycopg2).
     """
     if DB_ENGINE == "postgres":
         return _init_postgres()
 
     return _init_sqlite()
+
 
 
 def get_cursor(conn, *, dict_rows: bool = True):
