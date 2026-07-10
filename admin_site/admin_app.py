@@ -33,7 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder="static", static_url_path="/admin/static")
 app.config.from_object('shared.config.Config')
 mail = Mail(app)
 

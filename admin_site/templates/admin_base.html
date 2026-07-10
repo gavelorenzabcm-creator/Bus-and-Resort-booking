@@ -420,9 +420,9 @@
     {% endif %}
 
     {% if show_admin_shell %}
-    <script src="/static/js/notifications.js"></script>
-    <script src="/static/js/page_loader.js"></script>
-    <script src="/static/js/cancellation.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/page_loader.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cancellation.js') }}"></script>
     <script>
     (function() {
         'use strict';
