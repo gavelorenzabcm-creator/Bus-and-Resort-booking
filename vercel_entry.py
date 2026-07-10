@@ -29,6 +29,11 @@ from db_path import ensure_db_initialized
 
 ensure_db_initialized()
 
+from shared.db import init_db, init_website_settings
+
+init_db()
+init_website_settings()
+
 from main_site.app import app as main_app  # noqa: E402
 from admin_site.admin_app import app as admin_app  # noqa: E402
 
