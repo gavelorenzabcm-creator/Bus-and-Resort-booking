@@ -43,36 +43,36 @@ from admin_site.admin_app import app as admin_app  # noqa: E402
 
 
 def _create_dispatched_app():
-    """Return a WSGI application that routes to main_app or admin_app.
-
-    Dispatch rules:
-      - /admin* and /dashboard* -> admin_app
-      - everything else -> main_app
-
-    This keeps URLs intact for both apps.
-    """
+    """Return a WSGI application that routes requests to the correct Flask app."""
 
     def app(environ, start_response):
         path = environ.get("PATH_INFO", "") or ""
 
-        # Admin routes
+        # -----------------------------
+        # Admin Dashboard
+        # -----------------------------
         if path == "/dashboard" or path.startswith("/dashboard/"):
             return admin_app.wsgi_app(environ, start_response)
 
+        # -----------------------------
+        # Admin Pages
+        # -----------------------------
         if path == "/admin" or path.startswith("/admin/"):
             return admin_app.wsgi_app(environ, start_response)
 
-        # Admin login sometimes uses /admin (handled above). If there are other
-        # admin-entry routes, keep them on the admin app too.
-        if path.startswith("/admin"):
+        # -----------------------------
+        # Admin API Endpoints
+        # -----------------------------
+        if path.startswith("/api/admin/"):
             return admin_app.wsgi_app(environ, start_response)
 
-        # Customer site
+        # -----------------------------
+        # Customer Website
+        # -----------------------------
         return main_app.wsgi_app(environ, start_response)
 
     return app
 
 
-# Vercel looks for `app` or `handler`
+# Vercel looks for `app`
 app = _create_dispatched_app()
-
