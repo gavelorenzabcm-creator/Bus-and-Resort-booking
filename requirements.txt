@@ -13,3 +13,15 @@ python-dotenv==1.2.2
 supabase==2.31.0
 Werkzeug==3.1.8
 psycopg2-binary==2.9.10
+supabase==2.31.0
+storage3==2.31.0
+postgrest==2.31.0
+supabase-auth==2.31.0
+supabase-functions==2.31.0
+realtime==2.31.0
+httpx==0.28.1
+httpcore==1.0.9
+h2==4.3.0
+hyperframe==6.1.0
+hpack==4.2.0
+websockets==15.0.1
