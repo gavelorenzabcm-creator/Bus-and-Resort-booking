@@ -12,6 +12,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     )
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+import storage3
+print("storage3 version:", getattr(storage3, "__version__", "unknown"))
 
 
 def upload_file(file_storage, filename):
