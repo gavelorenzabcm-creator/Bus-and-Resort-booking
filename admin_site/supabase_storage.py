@@ -32,7 +32,7 @@ def upload_file(file_storage, filename):
             file=data,
             file_options={
                 "content-type": content_type,
-                "upsert": True,
+                "upsert": "true",
             },
         )
 
