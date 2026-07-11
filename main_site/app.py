@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import datetime as dt
 import json
 import logging
@@ -9,6 +12,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared import *
+from admin_site.supabase_storage import upload_file, delete_file
 
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_mail import Mail, Message
@@ -25,7 +29,6 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config.from_object('shared.config.Config')
 mail = Mail(app)
-
 # DB init moved to __main__ only
 
 
@@ -146,35 +149,30 @@ def _ensure_upload_folder() -> str:
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 
 def _save_uploaded_room_image(file_storage) -> str | None:
-    """Save uploaded room image and return relative path."""
+    """Upload room image to Supabase Storage and return the public URL."""
     if not file_storage or not file_storage.filename:
         return None
-    
-    upload_dir = _ensure_upload_folder()
+
     raw_name = secure_filename(file_storage.filename)
     if not raw_name:
         return None
-    
-    # Validate file extension (jpg, jpeg, png, webp only)
+
     stem, ext = os.path.splitext(raw_name)
     ext_lower = ext.lower()
+
     if ext_lower not in ALLOWED_IMAGE_EXTENSIONS:
         logger.warning(f"Invalid image extension: {ext}")
         return None
-    
-    # Generate unique filename
-    unique_name = f"room_{dt.datetime.now().strftime('%Y%m%d%H%M%S%f')}_{stem}{ext_lower}"
-    save_path = os.path.join(upload_dir, unique_name)
-    
-    try:
-        file_storage.save(save_path)
-        logger.info(f"Room image saved: {save_path}")
-        # Return relative path for static serves (uploads/filename.jpg)
-        return f"uploads/{unique_name}"
-    except Exception as e:
-        logger.error(f"Failed to save room image: {e}")
-        return None
 
+    unique_name = f"room_{dt.datetime.now().strftime('%Y%m%d%H%M%S%f')}_{stem}{ext_lower}"
+
+    try:
+        public_url = upload_file(file_storage, unique_name)
+        logger.info(f"Room image uploaded to Supabase: {public_url}")
+        return public_url
+    except Exception as e:
+        logger.error(f"Failed to upload room image: {e}")
+        return None
 
 def _send_admin_email(subject: str, message: str) -> None:
     """Send email to admin if email notifications are enabled."""

@@ -30,10 +30,6 @@ Thumbs.db
 # Database (optional - remove if you want to commit a seed DB)
 # bookings.db
 
-# Uploads
-static/uploads/
-!static/uploads/.gitkeep
-
 # Logs
 *.log
 

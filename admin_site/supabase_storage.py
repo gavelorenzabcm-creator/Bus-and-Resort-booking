@@ -41,10 +41,16 @@ def upload_file(file_storage, filename):
             file_options={
                 "content-type": file_storage.content_type,
                 "upsert": "true",
-            },
-        )
+        },
+    )
 
-        print(result)
+        print("UPLOAD SUCCESS:", result)
+
+    except Exception as e:
+        print("UPLOAD FAILED")
+        print(type(e))
+        print(repr(e))
+        raise
 
     finally:
         if os.path.exists(temp_path):

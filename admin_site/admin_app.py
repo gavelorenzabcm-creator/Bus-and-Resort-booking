@@ -328,7 +328,6 @@ def _save_website_image(file_storage, image_type: str = "image") -> str | None:
 
         logger.exception("Supabase upload failed")
         traceback.print_exc()
-
         raise
 
 def _delete_image_file(image_path: str) -> bool:
@@ -471,6 +470,7 @@ def admin_login():
         conn.close()
 
         if admin and check_password_hash(admin["password"], password):
+            logger.info(f"[LOGIN] DEBUG raw admin row: {dict(admin)}")
             logger.info(f"[LOGIN] Password match successful for {username}")
             session.clear()
             session["admin_id"] = admin["id"]
@@ -487,7 +487,6 @@ def admin_login():
         flash("Invalid admin credentials.", "error")
 
     return render_template("admin_login.html")
-
 
 @app.route("/admin/logout", methods=["POST"])
 def admin_logout():

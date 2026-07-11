@@ -73,6 +73,4 @@ def _create_dispatched_app():
 
     return app
 
-
-# Vercel looks for `app`
 app = _create_dispatched_app()
