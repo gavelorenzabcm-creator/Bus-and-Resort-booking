@@ -17,11 +17,22 @@ print("storage3 version:", getattr(storage3, "__version__", "unknown"))
 
 
 def upload_file(file_storage, filename):
+    import os
+    import tempfile
+
+    print("===== UPLOAD DEBUG =====")
+    print("filename:", filename)
+    print("content_type:", file_storage.content_type)
+    print("stream:", file_storage.stream)
+
     suffix = os.path.splitext(filename)[1]
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         file_storage.save(tmp.name)
         temp_path = tmp.name
+
+    print("temp path:", temp_path)
+    print("temp size:", os.path.getsize(temp_path))
 
     try:
         result = supabase.storage.from_(SUPABASE_BUCKET).upload(
@@ -33,7 +44,7 @@ def upload_file(file_storage, filename):
             },
         )
 
-        print("UPLOAD RESULT:", result)
+        print(result)
 
     finally:
         if os.path.exists(temp_path):
