@@ -9,6 +9,7 @@ Jinja2==3.1.6
 MarkupSafe==3.0.3
 openpyxl==3.1.5
 pillow==12.3.0
+python-dotenv==1.2.2
+supabase==2.31.0
 Werkzeug==3.1.8
 psycopg2-binary==2.9.10
-

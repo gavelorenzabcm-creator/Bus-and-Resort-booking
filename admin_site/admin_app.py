@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from admin_site.supabase_storage import upload_file, delete_file
+
 import csv
 import datetime as dt
 import io
@@ -222,165 +228,156 @@ ROOM_PHOTO_ASPECT_H = 5
 
 
 def _save_processed_room_photo(file_storage, slot_index: int) -> str | None:
-    """Save a processed 4:5 portrait room photo and return the URL path.
-
-    Processing behavior:
-      - Validates extension already handled upstream.
-      - Converts to RGB (for webp/png/jpg consistently).
-      - Crops to 4:5 centered (main subject centered as requested).
-      - Maintains high quality.
-
-    Returns:
-      - '/uploads/<filename>' relative URL path.
     """
+    Process a room photo into a centered 4:5 portrait,
+    upload it to Supabase Storage, and return its public URL.
+    """
+
     if not file_storage or not file_storage.filename:
         return None
 
-    upload_dir = _ensure_upload_folder()
     raw_name = secure_filename(file_storage.filename)
     if not raw_name:
         return None
 
     stem, ext = os.path.splitext(raw_name)
     ext_lower = ext.lower()
+
     if ext_lower not in ALLOWED_IMAGE_EXTENSIONS:
+        logger.warning(f"Invalid image extension: {ext}")
         return None
 
-    # Use a stable naming scheme to simplify debugging; order is captured in filename
-    timestamp = dt.datetime.now().strftime('%Y%m%d%H%M%S%f')
-    out_name = f"room_{slot_index}_{timestamp}_{stem}{ext_lower}"
-    out_full_path = os.path.join(upload_dir, out_name)
+    timestamp = dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
+    unique_name = f"room_{slot_index}_{timestamp}_{stem}{ext_lower}"
 
     try:
-        # Pillow needs the stream from the beginning
+        # Reset stream
         file_storage.seek(0)
+
+        # Open image
         img = Image.open(file_storage)
-        img = img.convert('RGB')
+        img = img.convert("RGB")
 
         w, h = img.size
-        target_ratio = ROOM_PHOTO_ASPECT_W / ROOM_PHOTO_ASPECT_H  # 0.8
+        target_ratio = ROOM_PHOTO_ASPECT_W / ROOM_PHOTO_ASPECT_H
+
         current_ratio = w / h if h else target_ratio
 
-        # Determine crop rectangle centered
+        # Center crop to 4:5
         if current_ratio > target_ratio:
-            # Image is too wide -> crop width
             new_w = int(h * target_ratio)
             left = (w - new_w) // 2
             box = (left, 0, left + new_w, h)
         else:
-            # Image is too tall/narrow -> crop height
             new_h = int(w / target_ratio)
             top = (h - new_h) // 2
             box = (0, top, w, top + new_h)
 
         img_cropped = img.crop(box)
 
-        # Export as 4:5 with same cropped content; keep resolution for quality
-        img_cropped.save(out_full_path, quality=95, optimize=True)
+        # Save processed image to memory
+        import io
 
-        return f"/uploads/{out_name}"
+        output = io.BytesIO()
+        img_cropped.save(output, format="JPEG", quality=95, optimize=True)
+        output.seek(0)
+
+        # Preserve filename/content_type expected by upload_file()
+        output.filename = unique_name
+        output.content_type = "image/jpeg"
+
+        public_url = upload_file(output, unique_name)
+
+        logger.info(f"Processed room photo uploaded to Supabase: {public_url}")
+
+        return public_url
+
     except Exception as e:
         logger.error(f"Failed to process room photo: {e}")
         return None
 
-
-
 def _save_website_image(file_storage, image_type: str = "image") -> str | None:
-    """Save website content image and return relative path.
-    
-    Args:
-        file_storage: Werkzeug FileStorage object
-        image_type: Type of image (homepage, resort, bus) for naming
-    
-    Returns:
-        Relative path like 'uploads/filename.jpg' or None on failure
-    """
+    """Upload website image to Supabase Storage."""
+
     if not file_storage or not file_storage.filename:
         return None
-    
-    # Use unified upload folder from config
-    upload_dir = _ensure_upload_folder()
-    
-    # Use secure_filename for the original filename
+
     raw_name = secure_filename(file_storage.filename)
     if not raw_name:
         return None
-    
-    # Validate file extension (jpg, jpeg, png, webp only)
+
     stem, ext = os.path.splitext(raw_name)
     ext_lower = ext.lower()
+
     if ext_lower not in ALLOWED_IMAGE_EXTENSIONS:
         logger.warning(f"Invalid image extension: {ext}")
         return None
-    
-    # Generate unique filename with timestamp and image type prefix
-    timestamp = dt.datetime.now().strftime('%Y%m%d%H%M%S%f')
+
+    timestamp = dt.datetime.now().strftime("%Y%m%d%H%M%S%f")
     unique_name = f"{image_type}_{timestamp}_{stem}{ext_lower}"
-    save_path = os.path.join(upload_dir, unique_name)
-    
+
     try:
-        file_storage.save(save_path)
-        logger.info(f"Website image saved: {save_path}")
-        # Return relative path for the URL (uploads/filename.jpg)
-        return f"uploads/{unique_name}"
+        public_url = upload_file(file_storage, unique_name)
+
+        logger.info(f"Website image uploaded to Supabase: {public_url}")
+
+        return public_url
+
     except Exception as e:
-        logger.error(f"Failed to save website image: {e}")
+        logger.error(f"Failed to upload website image: {e}")
         return None
 
-
 def _delete_image_file(image_path: str) -> bool:
-    """Delete an image file from the uploads folder."""
+    """Delete an image from Supabase Storage."""
     if not image_path:
         return False
+
     try:
-        # Extract filename from path
+        # Extract the filename from the URL or path
         filename = os.path.basename(image_path)
+
         if not filename:
             return False
-        
-        # Build full path
-        upload_dir = _ensure_upload_folder()
-        full_path = os.path.join(upload_dir, filename)
-        
-        # Check if file exists and delete it
-        if os.path.exists(full_path):
-            os.remove(full_path)
-            logger.info(f"Deleted image file: {full_path}")
-            return True
-        return False
+
+        delete_file(filename)
+
+        logger.info(f"Deleted image from Supabase: {filename}")
+        return True
+
     except Exception as e:
-        logger.error(f"Failed to delete image file {image_path}: {e}")
+        logger.error(f"Failed to delete image from Supabase: {e}")
         return False
 
 
 def _save_uploaded_room_image(file_storage) -> str | None:
-    """Save uploaded room image and return the URL path."""
+    """Upload room image to Supabase Storage and return the public URL."""
     if not file_storage or not file_storage.filename:
         return None
-    
-    upload_dir = _ensure_upload_folder()
+
     raw_name = secure_filename(file_storage.filename)
     if not raw_name:
         return None
-    
+
     # Validate file extension
     stem, ext = os.path.splitext(raw_name)
     ext_lower = ext.lower()
+
     if ext_lower not in ALLOWED_IMAGE_EXTENSIONS:
         logger.warning(f"Invalid image extension: {ext}")
         return None
-    
+
     # Generate unique filename
     unique_name = f"room_{dt.datetime.now().strftime('%Y%m%d%H%M%S%f')}_{stem}{ext_lower}"
-    save_path = os.path.join(upload_dir, unique_name)
-    
+
     try:
-        file_storage.save(save_path)
-        logger.info(f"Room image saved: {save_path}")
-        # Return relative URL path for /uploads/ route
-        return f"/uploads/{unique_name}"
+        public_url = upload_file(file_storage, unique_name)
+
+        logger.info(f"Room image uploaded to Supabase: {public_url}")
+
+        return public_url
+
     except Exception as e:
-        logger.error(f"Failed to save room image: {e}")
+        logger.error(f"Failed to upload room image: {e}")
         return None
 
 
