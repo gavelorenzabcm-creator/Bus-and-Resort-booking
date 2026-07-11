@@ -1,4 +1,5 @@
 import os
+import tempfile
 from supabase import create_client
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -12,19 +13,32 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def upload_file(file_storage, filename):
-    file_storage.stream.seek(0)
 
-    result = supabase.storage.from_(SUPABASE_BUCKET).upload(
-        path=filename,
-        file=file_storage.stream,
-        file_options={
-            "content-type": file_storage.content_type,
-            "upsert": "true",
-        },
-    )
+def upload_file(file_storage, filename):
+    suffix = os.path.splitext(filename)[1]
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        file_storage.save(tmp.name)
+        temp_path = tmp.name
+
+    try:
+        result = supabase.storage.from_(SUPABASE_BUCKET).upload(
+            path=filename,
+            file=temp_path,
+            file_options={
+                "content-type": file_storage.content_type,
+                "upsert": "true",
+            },
+        )
+
+        print("UPLOAD RESULT:", result)
+
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
     return supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+
 
 def delete_file(filename):
     supabase.storage.from_(SUPABASE_BUCKET).remove([filename])
