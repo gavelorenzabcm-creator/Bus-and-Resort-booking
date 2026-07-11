@@ -324,8 +324,12 @@ def _save_website_image(file_storage, image_type: str = "image") -> str | None:
         return public_url
 
     except Exception as e:
-        logger.error(f"Failed to upload website image: {e}")
-        return None
+        import traceback
+
+        logger.exception("Supabase upload failed")
+        traceback.print_exc()
+
+        raise
 
 def _delete_image_file(image_path: str) -> bool:
     """Delete an image from Supabase Storage."""
