@@ -17,11 +17,14 @@ The admin app defines *absolute* routes like:
 Therefore, we must not mount the admin app under a prefix (e.g. /admin) because
 that shifts route rules and causes 404s.
 
-Instead, we dispatch requests to the correct Flask app based on whether the
-incoming path actually matches one of admin_app's registered routes. This is
-more robust than a hardcoded list of prefixes: any route added to admin_app in
-the future (e.g. /delete/..., /approve/..., /export/...) is picked up
-automatically without needing to edit this dispatcher again.
+Instead, we dispatch requests to the correct Flask app based on a strict,
+explicit list of path prefixes that belong to the admin app. Anything not
+matching one of these prefixes is sent to the main (customer) site.
+
+NOTE: If you add a new absolute route to admin_app that does not start with
+/admin, /dashboard, or /api/admin/ (like /delete/... below), you must add its
+prefix to _ADMIN_PREFIXES here too, or it will 404 (main_app has no matching
+route and admin_app never gets the request).
 """
 
 import os
@@ -42,25 +45,11 @@ init_website_settings()
 from main_site.app import app as main_app  # noqa: E402
 from admin_site.admin_app import app as admin_app  # noqa: E402
 
-from werkzeug.routing import Map, RequestRedirect
-from werkzeug.exceptions import MethodNotAllowed, NotFound
-
-
-def _build_admin_matcher(flask_app):
-    """Build a Werkzeug URL matcher from admin_app's own url_map.
-
-    This lets us ask, for a given path, "does admin_app have a route for
-    this?" without needing to duplicate/hardcode its route list here.
-    """
-    return flask_app.url_map.bind("dummy")  # server_name is unused for matching only
-
-
-_admin_matcher = _build_admin_matcher(admin_app)
-
-# Explicit fallback prefixes, kept as a safety net in case URL matching
-# (which also checks HTTP method) rejects a path for a reason unrelated to
-# "does this belong to the admin app" (e.g. method mismatch on a valid admin
-# route). Any path under these prefixes always goes to admin_app.
+# Explicit prefixes: any path under these always goes to admin_app.
+# Kept as a strict, predictable allow-list rather than dynamically matching
+# against admin_app's url_map — dynamic matching previously caused main-site
+# routes (e.g. "/") to be incorrectly hijacked by admin_app's own catch-all
+# and static-file routes.
 _ADMIN_PREFIXES = (
     "/admin",
     "/dashboard",
@@ -70,19 +59,7 @@ _ADMIN_PREFIXES = (
 
 
 def _belongs_to_admin(path: str, method: str) -> bool:
-    if path.startswith(_ADMIN_PREFIXES) or path == "/admin" or path == "/dashboard":
-        return True
-
-    try:
-        _admin_matcher.match(path, method=method)
-        return True
-    except MethodNotAllowed:
-        # Path exists on admin_app, just not for this method — still admin's.
-        return True
-    except RequestRedirect:
-        return True
-    except NotFound:
-        return False
+    return path == "/admin" or path == "/dashboard" or path.startswith(_ADMIN_PREFIXES)
 
 
 def _create_dispatched_app():
