@@ -893,8 +893,8 @@ def resort_availability():
             except Exception:
                 rooms = []
 
-        checkin_date = (r["checkin"] or "").strip()
-        checkout_date = (r["checkout"] or "").strip()
+        checkin_date = _to_str(r["checkin"])
+        checkout_date = _to_str(r["checkout"])
         start_date = _parse_date(checkin_date)
         end_date = _parse_date(checkout_date)
         if not start_date:
@@ -908,8 +908,8 @@ def resort_availability():
             unavailable_dates.add(day.isoformat())
             day += dt.timedelta(days=1)
 
-        checkin_time = (r["checkin_time"] or "14:00").strip()
-        checkout_time = (r["checkout_time"] or "12:00").strip()
+        checkin_time = _to_str(r["checkin_time"]) or "14:00"
+        checkout_time = _to_str(r["checkout_time"]) or "12:00"
         start = f"{start_date.isoformat()}T{checkin_time}"
         end = f"{end_date.isoformat()}T{checkout_time}"
 
