@@ -2227,8 +2227,12 @@ def admin_sales():
     ).fetchall()
     conn.close()
 
-    def _day_key(ts: str) -> str:
-        return (ts or "")[:10] or "Unknown"
+    def _day_key(ts) -> str:
+        if ts is None:
+            return "Unknown"
+        if isinstance(ts, (dt.datetime, dt.date)):
+            return ts.isoformat()[:10]
+        return str(ts)[:10] or "Unknown"
 
     daily: dict[str, float] = {}
     monthly: dict[str, float] = {}
