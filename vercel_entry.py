@@ -50,11 +50,23 @@ from admin_site.admin_app import app as admin_app  # noqa: E402
 # against admin_app's url_map — dynamic matching previously caused main-site
 # routes (e.g. "/") to be incorrectly hijacked by admin_app's own catch-all
 # and static-file routes.
+#
+# This list was built by scanning every @app.route(...) decorator in
+# admin_site/admin_app.py. Anything NOT under /admin, /dashboard, or
+# /api/admin/ needs its own explicit entry here, or it will 404 (main_app has
+# no matching route and admin_app never receives the request).
+#
+# If you add a new absolute route to admin_app.py in the future that isn't
+# under one of the existing prefixes, add its prefix here too.
 _ADMIN_PREFIXES = (
     "/admin",
     "/dashboard",
     "/api/admin/",
+    "/confirm/",
+    "/cancel/",
     "/delete/",
+    "/edit/",
+    "/uploads/",
 )
 
 
