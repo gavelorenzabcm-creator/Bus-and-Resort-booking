@@ -184,6 +184,17 @@ class DBConnectionWrapper:
         self._conn.rollback()
 
     def close(self):
+        """Close the underlying connection.
+
+        For PostgreSQL, the connection is a module-level singleton that is
+        reused across requests/invocations to avoid paying a fresh TCP/TLS/
+        auth handshake to Supabase on every single request. Do NOT actually
+        close it here — that would defeat the whole point of reuse. The
+        connection is only closed when it's found to be dead/broken (see
+        _init_postgres), or when the process exits.
+        """
+        if self._engine == "postgres":
+            return
         self._conn.close()
 
     def __enter__(self):
@@ -281,17 +292,46 @@ def _init_sqlite() -> Any:
     return conn
 
 
+# Module-level cache for the PostgreSQL connection. Serverless platforms like
+# Vercel frequently reuse the same process/instance for consecutive requests
+# ("warm" invocations). Reusing the connection across those requests avoids
+# repeating a full TCP + TLS + auth handshake to Supabase every single time,
+# which is the single biggest source of added latency in this stack.
+_pg_conn = None
+
+
+def _pg_conn_is_alive(conn) -> bool:
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        cur.close()
+        return True
+    except Exception:
+        return False
+
+
 def _init_postgres() -> Any:
-    """Production backend."""
+    """Production backend. Reuses a warm connection when possible."""
+    global _pg_conn
+
     if psycopg2 is None:
         raise RuntimeError(
             "psycopg2 is not installed but DATABASE_URL is set. "
             "Add psycopg2-binary to requirements.txt and reinstall."
         )
 
-    conn = psycopg2.connect(DATABASE_URL)
+    if _pg_conn is not None and not _pg_conn.closed:
+        if _pg_conn_is_alive(_pg_conn):
+            return _pg_conn
+        try:
+            _pg_conn.close()
+        except Exception:
+            pass
+        _pg_conn = None
 
+    conn = psycopg2.connect(DATABASE_URL, connect_timeout=5)
     conn.autocommit = False
+    _pg_conn = conn
     return conn
 
 
@@ -304,49 +344,11 @@ def get_db_connection(timeout: float = 30.0):
 
     Note: `timeout` is ignored in PostgreSQL mode (handled by psycopg2).
     """
-    import inspect
-    import logging
-
-    calling = None
-    try:
-        frame = inspect.currentframe()
-        if frame is not None and frame.f_back is not None:
-            calling = f"{frame.f_back.f_globals.get('__name__','?')}.{frame.f_back.f_code.co_name}"
-    except Exception:
-        calling = None
-
-    has_url = bool(DATABASE_URL)
-
     if DB_ENGINE == "postgres":
         conn = _init_postgres()
-        try:
-            conn_cls = conn.__class__
-            conn_name = getattr(conn_cls, '__name__', str(conn_cls))
-            if conn_name and conn_name.lower().find('connection') == -1:
-                pass
-        except Exception:
-            conn_name = type(conn).__name__
-
-        logging.getLogger(__name__).info(
-            "[DB DEBUG] DATABASE_URL=%s ENGINE=PostgreSQL CONNECTION_CLASS=%s CALLING=%s",
-            has_url,
-            type(conn).__module__ + '.' + type(conn).__name__,
-            calling,
-        )
         return DBConnectionWrapper(conn, "postgres")
 
     conn = _init_sqlite()
-    try:
-        conn_fq = type(conn).__module__ + '.' + type(conn).__name__
-    except Exception:
-        conn_fq = type(conn).__name__
-
-    logging.getLogger(__name__).info(
-        "[DB DEBUG] DATABASE_URL=%s ENGINE=SQLite CONNECTION_CLASS=%s CALLING=%s",
-        has_url,
-        conn_fq,
-        calling,
-    )
     return DBConnectionWrapper(conn, "sqlite")
 
 

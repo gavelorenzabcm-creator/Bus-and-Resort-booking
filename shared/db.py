@@ -243,6 +243,15 @@ def cancel_booking(conn, booking_type: str, booking_id: int, cancelled_by: str) 
     }
 
 
+# Process-level guards. These prevent init_db()/init_website_settings() from
+# re-running their CREATE TABLE / INSERT statements against Supabase on every
+# warm invocation. They still run once per fresh cold start (new process),
+# which is correct and necessary — this only eliminates *redundant* repeats
+# within the same warm serverless instance.
+_db_initialized = False
+_website_settings_initialized = False
+
+
 def init_db():
     """Initialize schema idempotently.
 
@@ -250,6 +259,9 @@ def init_db():
     SQLite fallback remains supported but should only execute when DATABASE_URL
     is absent.
     """
+    global _db_initialized
+    if _db_initialized:
+        return
 
     conn = get_db_connection()
     try:
@@ -374,6 +386,7 @@ def init_db():
         )
 
         conn.commit()
+        _db_initialized = True
     finally:
         conn.close()
 
@@ -388,6 +401,10 @@ def init_website_settings():
 
     Safe for PostgreSQL and local SQLite fallback.
     """
+    global _website_settings_initialized
+    if _website_settings_initialized:
+        return
+
     conn = get_db_connection()
     try:
         conn.execute(
@@ -407,24 +424,15 @@ def init_website_settings():
             """
         )
 
-        if DB_ENGINE == "postgres":
-            conn.execute(
-                """
-                INSERT INTO WebsiteSettings (id)
-                VALUES (1)
-                ON CONFLICT (id) DO NOTHING
-                """
-            )
-        else:
-            conn.execute(
-                """
-                INSERT INTO WebsiteSettings (id)
-                VALUES (1)
-                ON CONFLICT (id) DO NOTHING
-                """
-            )
+        conn.execute(
+            """
+            INSERT INTO WebsiteSettings (id)
+            VALUES (1)
+            ON CONFLICT (id) DO NOTHING
+            """
+        )
 
         conn.commit()
+        _website_settings_initialized = True
     finally:
         conn.close()
-
