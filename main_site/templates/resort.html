@@ -61,7 +61,7 @@
                        data-price="{{ room.price }}">
                     <input type="checkbox" name="room_types[]" value="{{ room.id }}" data-price="{{ room.price }}" class="room-checkbox sr-only">
                     <!-- Checkmark badge -->
-                    <div class="check-badge absolute top-3 right-3 w-7 h-7 rounded-full bg-blue-600 text-white items-center justify-center hidden shadow-sm">
+                    <div class="check-badge absolute top-3 right-3 w-7 h-7 rounded-full bg-blue-600 text-white shadow-sm" style="display:none; align-items:center; justify-content:center;">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
                     {# Multi-photo portrait carousel (4:5) #}
@@ -639,25 +639,22 @@ document.addEventListener('DOMContentLoaded', async function () {
             });
         });
     }
-
     function syncCardVisuals() {
         if (!roomCardsContainer) return;
         roomCardsContainer.querySelectorAll('.room-card').forEach(card => {
             const cb = card.querySelector('.room-checkbox');
             const badge = card.querySelector('.check-badge');
             if (cb.checked) {
-                card.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
-                card.classList.remove('border-gray-200', 'bg-white');
-                if (badge) badge.classList.remove('hidden');
-                if (badge) badge.classList.add('flex');
-            } else {
-                card.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
-                card.classList.add('border-gray-200', 'bg-white');
-                if (badge) badge.classList.add('hidden');
-                if (badge) badge.classList.remove('flex');
-            }
-        });
-    }
+              card.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+              card.classList.remove('border-gray-200', 'bg-white');
+              if (badge) badge.style.display = 'flex';
+        } else {
+              card.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+              card.classList.add('border-gray-200', 'bg-white');
+              if (badge) badge.style.display = 'none';
+        }
+    });
+}
 
 // Add hidden input element reference for storing calculated total
     const calculatedTotalInput = document.getElementById('calculated-total');
