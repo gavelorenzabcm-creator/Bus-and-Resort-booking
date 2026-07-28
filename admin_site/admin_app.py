@@ -396,25 +396,37 @@ def _send_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
 
 
 @app.context_processor
-def inject_site_settings():
-    """Inject site settings into all templates - safe with default values if table is missing or DB error."""
+def inject_shared_template_context():
+    """Inject site settings + admin notifications into all templates.
+ 
+    Merged from two separate context processors (inject_site_settings,
+    inject_admin_notifications) into one, so every admin page load pays for
+    a single DB connection/round-trip set instead of two.
+    """
     conn = None
     try:
         conn = get_db_connection(timeout=5.0)
         settings = conn.execute("SELECT * FROM WebsiteSettings WHERE id = 1").fetchone()
-        conn.close()
-        return {"site_settings": settings}
+ 
+        unread_count, notifications = 0, []
+        if session.get('admin_id'):
+            unread_count, notifications = get_notifications(conn)
+ 
+        return {
+            "site_settings": settings,
+            "unread_count": unread_count,
+            "notifications": notifications,
+        }
     except Exception as e:
-        logger.warning(f"Could not load site settings (non-fatal): {e}")
+        logger.warning(f"Could not load shared template context (non-fatal): {e}")
+        return {"site_settings": None, "unread_count": 0, "notifications": []}
+    finally:
         if conn:
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
-        # Return None rather than crashing - templates handle missing settings gracefully
-        return {"site_settings": None}
-
-
+ 
 @app.context_processor
 def inject_admin_notifications():
     if session.get('admin_id'):
@@ -470,7 +482,6 @@ def admin_login():
         conn.close()
 
         if admin and check_password_hash(admin["password"], password):
-            logger.info(f"[LOGIN] DEBUG raw admin row: {dict(admin)}")
             logger.info(f"[LOGIN] Password match successful for {username}")
             session.clear()
             session["admin_id"] = admin["id"]
@@ -487,6 +498,7 @@ def admin_login():
         flash("Invalid admin credentials.", "error")
 
     return render_template("admin_login.html")
+
 
 @app.route("/admin/logout", methods=["POST"])
 def admin_logout():
@@ -541,6 +553,7 @@ def api_admin_stats():
                 pass
 
 
+
 @app.route("/dashboard")
 @admin_login_required
 def dashboard():
@@ -550,52 +563,60 @@ def dashboard():
         appliances = _get_rentable_appliances(conn)
         room_pricing_rows = _get_room_pricing_rows(conn)
         resort_rooms = _get_resort_rooms(conn)
-        # Attach ordered photo list for rendering previews
+ 
+        # --- Fixed N+1: fetch all room photos in ONE query, not one per room ---
+        room_ids = [room["id"] for room in resort_rooms]
+        photos_by_room: dict[int, list[str]] = {}
+        if room_ids:
+            placeholders = ",".join(["?"] * len(room_ids))
+            all_photos = conn.execute(
+                f"""
+                SELECT room_id, photo_order, image_path
+                FROM ResortRoomPhotos
+                WHERE room_id IN ({placeholders})
+                ORDER BY room_id, photo_order ASC
+                """,
+                tuple(room_ids),
+            ).fetchall()
+            for p in all_photos:
+                photos_by_room.setdefault(p["room_id"], []).append(p["image_path"])
+ 
         resort_rooms_list = []
         for room in resort_rooms:
             room_dict = dict(room)
-            photos = _get_resort_room_photos(conn, room_dict["id"])
-            room_dict["photos"] = [p["image_path"] for p in photos if p["image_path"]]
+            room_dict["photos"] = [p for p in photos_by_room.get(room_dict["id"], []) if p]
             resort_rooms_list.append(room_dict)
-
+ 
         exclusive_price = _get_exclusive_price(conn)
-
+ 
         # Notification retrieval can fail if DB is partially initialized on Vercel.
-        # Root-cause: real exception should be fixed upstream, but we must not
-        # crash the entire dashboard when Notification table/columns are missing.
-        # If Notification is absent, we fall back to safe defaults.
         try:
             unread_count, notifications = get_notifications(conn)
         except Exception as notif_exc:
             logger.error("Dashboard notification load failed (non-fatal): %s", notif_exc, exc_info=True)
             unread_count, notifications = 0, []
-
-        # Summary stats (ACTIVE/VALID only; never include Cancelled)
-
-        # Active statuses: Pending + Confirmed
-        active_bus = conn.execute(
-            "SELECT COUNT(*) as cnt FROM BusBookings WHERE status IN ('Pending','Confirmed')"
-        ).fetchone()['cnt']
-        active_resort = conn.execute(
-            "SELECT COUNT(*) as cnt FROM ResortBookings WHERE status IN ('Pending','Confirmed')"
-        ).fetchone()['cnt']
-
-        total_bus = active_bus
-        total_resort = active_resort
-        total_bookings = total_bus + total_resort
+ 
+        # --- Combined 4 separate stat queries into 1 round-trip ---
+        stats = conn.execute(
+            """
+            SELECT
+                (SELECT COUNT(*) FROM BusBookings WHERE status IN ('Pending','Confirmed')) AS active_bus,
+                (SELECT COUNT(*) FROM ResortBookings WHERE status IN ('Pending','Confirmed')) AS active_resort,
+                (SELECT COALESCE(SUM(price),0) FROM BusBookings WHERE status='Confirmed') AS bus_revenue,
+                (SELECT COALESCE(SUM(price),0) FROM ResortBookings WHERE status='Confirmed') AS resort_revenue
+            """
+        ).fetchone()
+ 
+        active_bus = stats["active_bus"]
+        active_resort = stats["active_resort"]
+        bus_revenue = stats["bus_revenue"]
+        resort_revenue = stats["resort_revenue"]
+ 
+        total_bookings = active_bus + active_resort
         active_reservations = total_bookings
-
-        # Revenue/cards should exclude cancelled entirely. Confirmed only.
-        bus_revenue = conn.execute(
-            "SELECT COALESCE(SUM(price),0) as total FROM BusBookings WHERE status='Confirmed'"
-        ).fetchone()['total']
-        resort_revenue = conn.execute(
-            "SELECT COALESCE(SUM(price),0) as total FROM ResortBookings WHERE status='Confirmed'"
-        ).fetchone()['total']
         total_revenue = float(bus_revenue) + float(resort_revenue)
-
-        # Total customers: only customers with at least one ACTIVE or COMPLETED booking.
-        # Current schema uses 'Confirmed' as completed; 'Pending' as active.
+ 
+        # Total customers: only customers with at least one ACTIVE booking.
         total_customers = conn.execute(
             """
             SELECT COUNT(*) AS cnt
@@ -610,14 +631,12 @@ def dashboard():
             ) t
             """
         ).fetchone()['cnt']
-
+ 
         return render_template(
-
             "dashboard.html",
             appliances=appliances,
             room_pricing_rows=room_pricing_rows,
             resort_rooms=resort_rooms_list,
-
             exclusive_price=exclusive_price,
             unread_count=unread_count,
             notifications=notifications,
@@ -629,7 +648,7 @@ def dashboard():
     except Exception as e:
         logger.error(f"Dashboard error: {e}", exc_info=True)
         flash("An error occurred while loading the dashboard. Please try again.", "error")
-        return render_template("dashboard.html", 
+        return render_template("dashboard.html",
             appliances=[],
             room_pricing_rows=[],
             resort_rooms=[],
