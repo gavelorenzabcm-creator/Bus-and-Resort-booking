@@ -1,0 +1,25 @@
+{
+  "name": "BusResort Admin",
+  "short_name": "BR Admin",
+  "description": "Admin dashboard for BusResort bookings",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2563EB",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "/admin/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/admin/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
