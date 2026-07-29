@@ -264,6 +264,15 @@
                             {% if c and c.office_address %}
                                 <p class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-sky-700"></i> {{ c.office_address }}</p>
                             {% endif %}
+
+                            {% if c and c.google_maps_link %}
+                                <p class="flex items-center gap-2">
+                                    <i class="fas fa-location-arrow text-sky-700"></i>
+                                    <a href="{{ c.google_maps_link }}" target="_blank" rel="noopener" class="text-sky-700 hover:text-sky-800 underline transition">
+                                         Get Directions
+                                    </a>
+                                </p>
+                            {% endif %}
                         </div>
 
                         <div class="mt-4 flex items-center gap-3">
