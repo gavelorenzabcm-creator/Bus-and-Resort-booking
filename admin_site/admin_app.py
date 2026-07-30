@@ -963,8 +963,8 @@ def edit_booking(booking_type: str, booking_id: int):
             )
         else:
             payment_method = (form.get("payment_method", booking_data.get("payment_method", "Cash") or "Cash") or "Cash").strip()
-        if payment_method not in ("Cash", "GCash", "Bank Transfer"):
-            payment_method = "Cash"
+            if payment_method not in ("Cash", "GCash", "Bank Transfer"):
+                payment_method = "Cash"
             price_per_night = float(form.get("price_per_night", booking_data.get("price_per_night", 0) or 0) or 0)
             total_cost = float(form.get("total_cost", booking_data.get("total_cost", booking_data["price"] or 0) or 0) or 0)
             down_payment = float(form.get("down_payment", booking_data.get("down_payment", 0) or 0) or 0)
