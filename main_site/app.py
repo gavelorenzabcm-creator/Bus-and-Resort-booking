@@ -684,24 +684,40 @@ def resort():
     pricing_rows = _get_room_pricing_rows(conn)
     resort_rooms = _get_resort_rooms(conn)
     resort_rooms_list = []
+
+    # Build pricing lookup once (avoids a query per room for price_per_night)
+    pricing_lookup = {r["room_type"]: float(r["price_per_night"]) for r in pricing_rows}
+
+    # Fetch ALL room photos in ONE query instead of one query per room (fixes N+1)
+    room_ids = [room["id"] for room in resort_rooms]
+    photos_by_room: dict[int, list[str]] = {}
+    if room_ids:
+        placeholders = ",".join(["?"] * len(room_ids))
+        all_photos = conn.execute(
+            f"""
+            SELECT room_id, photo_order, image_path
+            FROM ResortRoomPhotos
+            WHERE room_id IN ({placeholders})
+              AND image_path IS NOT NULL
+              AND image_path != ''
+            ORDER BY room_id, photo_order ASC
+            """,
+            tuple(room_ids),
+        ).fetchall()
+        for p in all_photos:
+            photos_by_room.setdefault(p["room_id"], []).append(p["image_path"])
+
     for room in resort_rooms:
         room_dict = dict(room)
 
-        # Prefer multi-photo gallery (new system)
-        photos_rows = _get_resort_room_photos(conn, room_dict["id"])
-        photos = [r["image_path"] for r in photos_rows if r["image_path"]]
+        photos = photos_by_room.get(room_dict["id"], [])
 
         # Backwards-compatible fallback to legacy single image_path
         if not photos and room_dict.get("image_path"):
             photos = [room_dict["image_path"]]
 
         room_dict["photos"] = photos
-
-        price_row = conn.execute(
-            "SELECT price_per_night FROM RoomPricing WHERE room_type = ?",
-            (room['room_type'],),
-        ).fetchone()
-        room_dict['price'] = float(price_row['price_per_night']) if price_row else 0
+        room_dict["price"] = pricing_lookup.get(room_dict["room_type"], 0)
 
         resort_rooms_list.append(room_dict)
 
@@ -973,4 +989,3 @@ if __name__ == '__main__':
     init_db()
     init_website_settings()
     app.run(debug=False, host="127.0.0.1", port=5000)
-
