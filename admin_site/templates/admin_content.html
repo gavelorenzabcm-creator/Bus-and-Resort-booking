@@ -190,19 +190,9 @@
         <p class="text-xs text-slate-500 mt-2">Use line breaks (\n) if needed.</p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-1 gap-4">
         <div>
-          <label class="block text-sm font-medium text-black mb-2">OK Button Text</label>
-          <input type="text" name="booking_success_popup_ok_text" value="{{ settings.booking_success_popup_ok_text if settings else 'OK' }}" class="admin-input w-full p-3 rounded-lg">
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-black mb-2">View Booking Button Text</label>
-          <input type="text" name="booking_success_popup_view_text" value="{{ settings.booking_success_popup_view_text if settings else 'View My Booking' }}" class="admin-input w-full p-3 rounded-lg">
-        </div>
-
-        <div class="md:col-span-1">
-          <div class="mt-6 p-4 rounded-xl border border-slate-200 bg-white">
+          <div class="p-4 rounded-xl border border-slate-200 bg-white">
             <p class="text-sm font-semibold text-black">Reference number</p>
             <p class="text-xs text-slate-600 mt-1">Popup automatically shows the inserted booking ID as the reference number.</p>
           </div>
@@ -214,10 +204,12 @@
     <section class="space-y-4">
       <h2 class="text-lg font-semibold text-black">Branding</h2>
       <p class="text-sm text-slate-600">Public footer uses stored CMS values.</p>
-      <button type="submit" class="btn-primary px-6 py-3 rounded-lg font-medium">Save</button>
-      <button type="button" onclick="location.reload()" class="btn-secondary px-6 py-3 rounded-lg font-medium">Cancel</button>
-      <button type="reset" class="btn-secondary px-6 py-3 rounded-lg font-medium">Reset</button>
-    </div>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button type="submit" class="btn-primary px-6 py-3 rounded-lg font-medium">Save</button>
+        <button type="button" onclick="location.reload()" class="btn-secondary px-6 py-3 rounded-lg font-medium">Cancel</button>
+        <button type="reset" class="btn-secondary px-6 py-3 rounded-lg font-medium">Reset</button>
+      </div>
+    </section>
   </form>
 </div>
 
@@ -248,4 +240,3 @@ function previewImage(event, containerId) {
 
 </script>
 {% endblock %}
-
