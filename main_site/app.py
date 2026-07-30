@@ -300,7 +300,7 @@ def home():
             else:
                 bus_query = """
                     SELECT id, name, email, contact, pickup, destination, datetime, checkout, passengers, 
-                        price, status, 'bus' as type, created_at
+                        price, down_payment, status, 'bus' as type, created_at
                     FROM BusBookings 
                     WHERE LOWER(TRIM(name)) = ?
                     ORDER BY created_at DESC
@@ -973,3 +973,4 @@ if __name__ == '__main__':
     init_db()
     init_website_settings()
     app.run(debug=False, host="127.0.0.1", port=5000)
+
