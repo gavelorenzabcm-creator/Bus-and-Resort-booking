@@ -291,7 +291,7 @@ def home():
             if phone:
                 bus_query = """
                     SELECT id, name, email, contact, pickup, destination, datetime, checkout, passengers, 
-                           price, status, 'bus' as type, created_at
+                        price, down_payment, status, 'bus' as type, created_at
                     FROM BusBookings 
                     WHERE LOWER(TRIM(name)) = ? AND LOWER(TRIM(contact)) = ?
                     ORDER BY created_at DESC
@@ -300,7 +300,7 @@ def home():
             else:
                 bus_query = """
                     SELECT id, name, email, contact, pickup, destination, datetime, checkout, passengers, 
-                           price, status, 'bus' as type, created_at
+                        price, status, 'bus' as type, created_at
                     FROM BusBookings 
                     WHERE LOWER(TRIM(name)) = ?
                     ORDER BY created_at DESC
@@ -310,7 +310,7 @@ def home():
             if phone:
                 resort_query = """
                     SELECT id, name, email, contact, checkin, checkout, checkin_time, checkout_time, guests, room_type, 
-                           price, status, 'resort' as type, created_at
+                        price, down_payment, status, 'resort' as type, created_at
                     FROM ResortBookings 
                     WHERE LOWER(TRIM(name)) = ? AND LOWER(TRIM(contact)) = ?
                     ORDER BY created_at DESC
@@ -319,7 +319,7 @@ def home():
             else:
                 resort_query = """
                     SELECT id, name, email, contact, checkin, checkout, checkin_time, checkout_time, guests, room_type, 
-                           price, status, 'resort' as type, created_at
+                        price, down_payment, status, 'resort' as type, created_at
                     FROM ResortBookings 
                     WHERE LOWER(TRIM(name)) = ?
                     ORDER BY created_at DESC

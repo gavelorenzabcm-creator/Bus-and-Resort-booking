@@ -46,6 +46,7 @@
                                     <th class="p-4 text-left font-semibold text-black">Details</th>
                                     <th class="p-4 text-left font-semibold text-black">Dates</th>
                                     <th class="p-4 text-left font-semibold text-black">Price</th>
+                                    <th class="p-4 text-left font-semibold text-black">Payment</th>
                                     <th class="p-4 text-left font-semibold text-black">Status</th>
                                     <th class="p-4 text-left font-semibold text-black">Action</th>
                                 </tr>
@@ -74,6 +75,20 @@
                                         {% endif %}
                                     </td>
                                     <td class="p-4 font-semibold text-lg">₱{{ '{:,.0f}'.format(b.price or 0) }}</td>
+                                    <td class="p-4">
+                                        {% set dp = b.down_payment or 0 %}
+                                        {% set bal = (b.price or 0) - dp %}
+                                        {% if bal <= 0 and (b.price or 0) > 0 %}
+                                            <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800">Paid</span>
+                                        {% elif dp > 0 %}
+                                            <div class="text-xs text-black">
+                                                <div>Paid: ₱{{ '{:,.0f}'.format(dp) }}</div>
+                                                <div class="text-gray-600">Balance: ₱{{ '{:,.0f}'.format(bal) }}</div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-xs text-gray-500">No payment yet</span>
+                                        {% endif %}
+                                    </td>
                                     <td class="p-4">
                                         <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full 
                                             {{ 'bg-gray-100 text-black' if b.status == 'Confirmed' }}
