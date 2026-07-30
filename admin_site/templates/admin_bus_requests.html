@@ -19,12 +19,16 @@
                     <th class="p-3 text-left font-medium">Date/Time</th>
                     <th class="p-3 text-left font-medium">Status</th>
                     <th class="p-3 text-left font-medium">Price</th>
+                    <th class="p-3 text-left font-medium">Payment</th>
                     <th class="p-3 text-left font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% if bus_bookings %}
                     {% for b in bus_bookings %}
+                        {% set dp = b.down_payment or 0 %}
+                        {% set price_val = b.price or 0 %}
+                        {% set bal = price_val - dp %}
                         <tr class="admin-table-row">
                             <td class="p-3">{{ b.name }}</td>
                             <td class="p-3">{{ b.contact }}</td>
@@ -37,7 +41,16 @@
                                     {{ b.status }}
                                 </span>
                             </td>
-                            <td class="p-3">PHP {{ '%.2f'|format(b.price or 0) }}</td>
+                            <td class="p-3">PHP {{ '%.2f'|format(price_val) }}</td>
+                            <td class="p-3">
+                                {% if bal <= 0 and price_val > 0 %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+                                {% elif dp > 0 %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Partial (PHP {{ '%.2f'|format(bal) }} left)</span>
+                                {% else %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Unpaid</span>
+                                {% endif %}
+                            </td>
                             <td class="p-3">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     {% if b.status != 'Cancelled' %}
@@ -59,7 +72,7 @@
                         </tr>
                     {% endfor %}
                 {% else %}
-<tr><td colspan="9" class="p-8 text-center text-gray-500">No bus requests yet.</td></tr>
+<tr><td colspan="10" class="p-8 text-center text-gray-500">No bus requests yet.</td></tr>
                 {% endif %}
             </tbody>
         </table>

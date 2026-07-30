@@ -939,10 +939,11 @@ def edit_booking(booking_type: str, booking_id: int):
         form = request.form
         if booking_type == "bus":
             price = float(form.get("price", booking_data["price"] or 0) or 0)
+            down_payment = float(form.get("down_payment", booking_data.get("down_payment", 0) or 0) or 0)
             conn.execute(
                 """
                 UPDATE BusBookings
-                SET name = ?, contact = ?, email = ?, pickup = ?, destination = ?, datetime = ?, checkin = ?, checkout = ?, status = ?, price = ?
+                SET name = ?, contact = ?, email = ?, pickup = ?, destination = ?, datetime = ?, checkin = ?, checkout = ?, status = ?, price = ?, down_payment = ?
                 WHERE id = ?
                 """,
                 (
@@ -956,19 +957,21 @@ def edit_booking(booking_type: str, booking_id: int):
                     form.get("checkout", "").strip(),
                     form.get("status", "Pending").strip() or "Pending",
                     price,
+                    down_payment,
                     booking_id,
                 ),
             )
         else:
             payment_method = (form.get("payment_method", booking_data.get("payment_method", "Cash") or "Cash") or "Cash").strip()
-            if payment_method not in ("Cash", "GCash", "Bank Transfer"):
-                payment_method = "Cash"
+        if payment_method not in ("Cash", "GCash", "Bank Transfer"):
+            payment_method = "Cash"
             price_per_night = float(form.get("price_per_night", booking_data.get("price_per_night", 0) or 0) or 0)
             total_cost = float(form.get("total_cost", booking_data.get("total_cost", booking_data["price"] or 0) or 0) or 0)
+            down_payment = float(form.get("down_payment", booking_data.get("down_payment", 0) or 0) or 0)
             conn.execute(
                 """
                 UPDATE ResortBookings
-                SET name = ?, contact = ?, email = ?, checkin = ?, checkout = ?, checkin_time = ?, checkout_time = ?, guests = ?, room_type = ?, payment_method = ?, status = ?, price_per_night = ?, total_cost = ?, price = ?
+                SET name = ?, contact = ?, email = ?, checkin = ?, checkout = ?, checkin_time = ?, checkout_time = ?, guests = ?, room_type = ?, payment_method = ?, status = ?, price_per_night = ?, total_cost = ?, price = ?, down_payment = ?
                 WHERE id = ?
                 """,
                 (
@@ -986,6 +989,7 @@ def edit_booking(booking_type: str, booking_id: int):
                     price_per_night,
                     total_cost,
                     total_cost,
+                    down_payment,
                     booking_id,
                 ),
             )

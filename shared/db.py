@@ -385,6 +385,10 @@ def init_db():
             """
         )
 
+        # Down payment tracking (added after initial launch — safe to run repeatedly)
+        conn.execute("ALTER TABLE BusBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0")
+        conn.execute("ALTER TABLE ResortBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0")
+
         conn.commit()
         _db_initialized = True
     finally:

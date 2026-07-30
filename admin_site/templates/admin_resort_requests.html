@@ -22,12 +22,16 @@
                     <th class="p-3 text-left font-medium">Status</th>
                     <th class="p-3 text-left font-medium">PHP/Night</th>
                     <th class="p-3 text-left font-medium">Total Cost</th>
+                    <th class="p-3 text-left font-medium">Payment Status</th>
                     <th class="p-3 text-left font-medium">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% if resort_bookings %}
                     {% for r in resort_bookings %}
+                        {% set dp = r.down_payment or 0 %}
+                        {% set total_val = r.total_cost or r.price or 0 %}
+                        {% set bal = total_val - dp %}
                         <tr class="admin-table-row">
                             <td class="p-3">{{ r.name }}</td>
                             <td class="p-3">{{ r.contact }}</td>
@@ -43,7 +47,16 @@
                                 </span>
                             </td>
                             <td class="p-3">PHP {{ '{:,.0f}'.format(r.price_per_night or 0) }}</td>
-                            <td class="p-3">PHP {{ '{:,.0f}'.format(r.total_cost or r.price or 0) }}</td>
+                            <td class="p-3">PHP {{ '{:,.0f}'.format(total_val) }}</td>
+                            <td class="p-3">
+                                {% if bal <= 0 and total_val > 0 %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid</span>
+                                {% elif dp > 0 %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Partial (PHP {{ '{:,.0f}'.format(bal) }} left)</span>
+                                {% else %}
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">Unpaid</span>
+                                {% endif %}
+                            </td>
                             <td class="p-3">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     {% if r.status != 'Cancelled' %}
@@ -65,7 +78,7 @@
                         </tr>
                     {% endfor %}
                 {% else %}
-                    <tr><td colspan="12" class="p-8 text-center text-gray-500">No resort requests yet.</td></tr>
+                    <tr><td colspan="13" class="p-8 text-center text-gray-500">No resort requests yet.</td></tr>
                 {% endif %}
             </tbody>
         </table>
