@@ -750,7 +750,7 @@ def bus_availability():
     logging.getLogger(__name__).info("[ROUTE ENTRY] /api/availability/bus conn_type=%s get_db_connection_from=%s", type(conn).__name__, get_db_connection.__module__)
 
     rows = conn.execute(
-        "SELECT name, datetime, checkin, checkout, status FROM BusBookings WHERE status IN ('Pending','Confirmed')"
+        "SELECT datetime, checkin, checkout, status FROM BusBookings WHERE status IN ('Pending','Confirmed')"
     ).fetchall()
     conn.close()
 
@@ -773,7 +773,7 @@ def bus_availability():
             day += dt.timedelta(days=1)
 
         events.append({
-            "title": f"{r['name']} ({r['status']})",
+            "title": r["status"],
             "start": start_raw,
             "end": end_raw,
             "allDay": False,
@@ -895,7 +895,7 @@ def feedback():
 def resort_availability():
     conn = get_db_connection()
     rows = conn.execute(
-        "SELECT name, checkin, checkout, checkin_time, checkout_time, status, room_instances FROM ResortBookings WHERE status IN ('Pending','Confirmed')"
+        "SELECT checkin, checkout, checkin_time, checkout_time, status, room_instances FROM ResortBookings WHERE status IN ('Pending','Confirmed')"
     ).fetchall()
     conn.close()
 
@@ -930,7 +930,7 @@ def resort_availability():
         end = f"{end_date.isoformat()}T{checkout_time}"
 
         events.append({
-            "title": f"{r['name']} ({r['status']})",
+            "title": r["status"],
             "start": start,
             "end": end,
             "allDay": False,
