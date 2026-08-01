@@ -474,7 +474,7 @@ async function initCalendars() {
                 <div>
                     <h3 class="text-base font-semibold text-slate-900 mb-4">Existing Rooms</h3>
                     {% if resort_rooms %}
-                        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
                             {% for room in resort_rooms %}
                             <div class="admin-card-alt p-4">
                                 <div class="flex items-start justify-between gap-3 mb-4">
@@ -502,11 +502,17 @@ async function initCalendars() {
                                     <input type="text" name="name" value="{{ room.name }}" required class="admin-input w-full p-3 rounded-2xl">
                                     <input type="text" name="room_type" value="{{ room.room_type }}" required class="admin-input w-full p-3 rounded-2xl">
                                     <div class="grid gap-3 sm:grid-cols-2">
-                                        <input type="number" min="1" name="capacity" value="{{ room.capacity or 2 }}" class="admin-input w-full p-3 rounded-2xl">
-                                        <select name="status" class="admin-input w-full p-3 rounded-2xl">
-                                            <option value="Available" {% if room.status == 'Available' %}selected{% endif %}>Available</option>
-                                            <option value="Unavailable" {% if room.status == 'Unavailable' %}selected{% endif %}>Unavailable</option>
-                                        </select>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1">Capacity</label>
+                                            <input type="number" min="1" name="capacity" value="{{ room.capacity or 2 }}" class="admin-input w-full p-3 rounded-2xl">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium text-slate-500 mb-1">Status</label>
+                                            <select name="status" class="admin-input w-full p-3 rounded-2xl">
+                                                <option value="Available" {% if room.status == 'Available' %}selected{% endif %}>Available</option>
+                                                <option value="Unavailable" {% if room.status == 'Unavailable' %}selected{% endif %}>Unavailable</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     {# Legacy single-image upload removed; multi-photo managed via photo_0..photo_2 in backend endpoint #}
                                     <div class="grid grid-cols-1 gap-2">
