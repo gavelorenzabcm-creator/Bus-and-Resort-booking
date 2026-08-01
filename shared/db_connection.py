@@ -139,10 +139,12 @@ class DBConnectionWrapper:
 
     def execute(self, sql, params=()):
         stripped = None
+        had_returning = True
         if self._engine == "postgres":
             sql = _normalize_placeholders(sql)
             stripped = sql.strip().upper()
-            if stripped.startswith("INSERT") and "RETURNING" not in sql.upper():
+            had_returning = "RETURNING" in sql.upper()
+            if stripped.startswith("INSERT") and not had_returning:
                 sql = sql.rstrip().rstrip(";") + " RETURNING id"
 
         if self._engine == "postgres":
@@ -152,7 +154,13 @@ class DBConnectionWrapper:
         cursor.execute(sql, params)
 
         lastrowid = None
-        if self._engine == "postgres" and stripped is not None and stripped.startswith("INSERT"):
+        # Only auto-consume the RETURNING id row if WE added the RETURNING
+        # clause ourselves. If the caller's own SQL already included
+        # RETURNING (e.g. admin_add_room's explicit "...RETURNING id"),
+        # leave the result set untouched so the caller's own .fetchone()
+        # call gets the row — otherwise we silently consume it here and
+        # the caller gets None, crashing on None["id"].
+        if self._engine == "postgres" and stripped is not None and stripped.startswith("INSERT") and not had_returning:
             try:
                 row = cursor.fetchone()
                 if row is not None:
