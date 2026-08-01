@@ -293,7 +293,7 @@ def _save_processed_room_photo(file_storage, slot_index: int) -> str | None:
         return public_url
 
     except Exception as e:
-        logger.error(f"Failed to process room photo: {e}")
+        logger.error(f"Failed to process room photo: {e}", exc_info=True)
         return None
 
 def _save_website_image(file_storage, image_type: str = "image") -> str | None:
