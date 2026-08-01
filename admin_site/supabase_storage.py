@@ -20,38 +20,34 @@ def upload_file(file_storage, filename):
     import os
     import tempfile
 
-    print("===== UPLOAD DEBUG =====")
-    print("filename:", filename)
-    print("content_type:", file_storage.content_type)
-    print("stream:", file_storage.stream)
+    content_type = getattr(file_storage, "content_type", None) or "application/octet-stream"
 
     suffix = os.path.splitext(filename)[1]
-
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        file_storage.save(tmp.name)
         temp_path = tmp.name
 
-    print("temp path:", temp_path)
-    print("temp size:", os.path.getsize(temp_path))
-
     try:
+        if hasattr(file_storage, "save"):
+            # Flask FileStorage object (has .save(path))
+            file_storage.save(temp_path)
+        else:
+            # Plain file-like object (e.g. io.BytesIO from processed images)
+            if hasattr(file_storage, "seek"):
+                file_storage.seek(0)
+            data = file_storage.read()
+            with open(temp_path, "wb") as f:
+                f.write(data)
+
         result = supabase.storage.from_(SUPABASE_BUCKET).upload(
             path=filename,
             file=temp_path,
             file_options={
-                "content-type": file_storage.content_type,
+                "content-type": content_type,
                 "upsert": "true",
-        },
-    )
-
-        print("UPLOAD SUCCESS:", result)
-
+            },
+        )
     except Exception as e:
-        print("UPLOAD FAILED")
-        print(type(e))
-        print(repr(e))
         raise
-
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
