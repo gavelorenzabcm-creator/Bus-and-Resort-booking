@@ -139,7 +139,7 @@
 <div class="grid grid-cols-1 gap-4">
         {% if site_settings and site_settings.homepage_image %}
             <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
-                <img src="/uploads/{{ site_settings.homepage_image.split('/')[-1] if site_settings.homepage_image.startswith('uploads/') else site_settings.homepage_image }}" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy">
+                <img src="{% if site_settings.homepage_image.startswith('http://') or site_settings.homepage_image.startswith('https://') %}{{ site_settings.homepage_image }}{% else %}/uploads/{{ site_settings.homepage_image.split('/')[-1] if site_settings.homepage_image.startswith('uploads/') else site_settings.homepage_image }}{% endif %}" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy">
             </div>
         {% else %}
             <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
@@ -150,7 +150,7 @@
 
         {% if site_settings and site_settings.resort_image %}
             <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
-                <img src="/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}" alt="Resort" class="w-full h-full object-cover" loading="lazy">
+                <img src="{% if site_settings.resort_image.startswith('http://') or site_settings.resort_image.startswith('https://') %}{{ site_settings.resort_image }}{% else %}/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}{% endif %}" alt="Resort" class="w-full h-full object-cover" loading="lazy">
             </div>
         {% else %}
             <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
