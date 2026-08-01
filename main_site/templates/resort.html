@@ -4,7 +4,7 @@
 <div class="max-w-3xl mx-auto">
     <h1 class="text-3xl md:text-4xl font-bold text-black mb-6 text-center">Macaya Beach Resort Booking</h1>
     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm mb-6">
-        <img src="{% if site_settings and site_settings.resort_image %}/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}{% else %}/uploads/MBR.jpg{% endif %}" alt="Macaya Beach Resort" class="w-full max-h-64 md:max-h-80 object-contain rounded-xl shadow-lg mb-6 mx-auto block" loading="lazy" onerror="this.style.display='none';">
+        <img src="{% if site_settings and site_settings.resort_image %}{% if site_settings.resort_image.startswith('http://') or site_settings.resort_image.startswith('https://') %}{{ site_settings.resort_image }}{% else %}/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}{% endif %}{% else %}/uploads/MBR.jpg{% endif %}" alt="Macaya Beach Resort" class="w-full max-h-64 md:max-h-80 object-contain rounded-xl shadow-lg mb-6 mx-auto block" loading="lazy" onerror="this.style.display='none';">
 
         <p class="text-lg text-gray-600 text-center font-semibold text-xl md:text-2xl">Macaya Beach Resort</p>
         <p class="text-gray-600 text-center mt-2">Tap the cards below to select one or more rooms.</p>
