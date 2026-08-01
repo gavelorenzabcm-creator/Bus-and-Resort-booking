@@ -15,6 +15,8 @@ Booking/business logic is preserved; only initialization SQL is migrated.
 """
 
 from flask import logging
+import logging
+
 from werkzeug.security import generate_password_hash
 
 from shared.db_connection import get_db_connection
