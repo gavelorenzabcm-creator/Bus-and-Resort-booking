@@ -330,7 +330,7 @@ def _init_postgres() -> Any:
         _pg_conn = None
 
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=5)
-    conn.autocommit = False
+    conn.autocommit = True
     _pg_conn = conn
     return conn
 
