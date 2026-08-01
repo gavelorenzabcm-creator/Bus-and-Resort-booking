@@ -138,18 +138,24 @@
     </div>
 <div class="grid grid-cols-1 gap-4">
         {% if site_settings and site_settings.homepage_image %}
-            <img src="/uploads/{{ site_settings.homepage_image.split('/')[-1] if site_settings.homepage_image.startswith('uploads/') else site_settings.homepage_image }}" alt="Mini Bus" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy">
-
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
+                <img src="/uploads/{{ site_settings.homepage_image.split('/')[-1] if site_settings.homepage_image.startswith('uploads/') else site_settings.homepage_image }}" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy">
+            </div>
         {% else %}
-            <img src="/uploads/BUS.jpg" alt="Mini Bus" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy" onerror="this.style.display='none'">
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
+                <img src="/uploads/BUS.jpg" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+            </div>
         {% endif %}
 
-        
-        {% if site_settings and site_settings.resort_image %}
-            <img src="/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}" alt="Resort" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy">
 
+        {% if site_settings and site_settings.resort_image %}
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
+                <img src="/uploads/{{ site_settings.resort_image.split('/')[-1] if site_settings.resort_image.startswith('uploads/') else site_settings.resort_image }}" alt="Resort" class="w-full h-full object-cover" loading="lazy">
+            </div>
         {% else %}
-            <img src="/uploads/MBR.jpg" alt="Resort" class="w-full max-h-48 md:max-h-56 object-contain rounded-xl shadow-lg mx-auto block" loading="lazy" onerror="this.style.display='none'">
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden">
+             <img src="/uploads/MBR.jpg" alt="Resort" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+            </div>
         {% endif %}
 
     </div>
