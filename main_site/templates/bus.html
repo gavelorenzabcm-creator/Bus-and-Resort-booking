@@ -5,10 +5,14 @@
     <h1 class="text-4xl font-bold text-black mb-8 text-center">Mini Bus Rental Booking</h1>
 <div class="bg-white p-8 rounded-2xl shadow-sm mb-8">
         {% if site_settings and site_settings.bus_image %}
-            <img src="/uploads/{{ site_settings.bus_image.split('/')[-1] if site_settings.bus_image.startswith('uploads/') else site_settings.bus_image }}" alt="Mini Bus" class="w-full max-h-72 md:max-h-80 object-contain rounded-xl shadow-lg mb-8 mx-auto block" loading="lazy" onerror="this.style.display='none'">
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden mb-8 mx-auto">
+                <img src="{% if site_settings.bus_image.startswith('http://') or site_settings.bus_image.startswith('https://') %}{{ site_settings.bus_image }}{% else %}/uploads/{{ site_settings.bus_image.split('/')[-1] if site_settings.bus_image.startswith('uploads/') else site_settings.bus_image }}{% endif %}" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+            </div>
 
         {% else %}
-            <img src="/uploads/BUS.jpg" alt="Mini Bus" class="w-full max-h-72 md:max-h-80 object-contain rounded-xl shadow-lg mb-8 mx-auto block" loading="lazy" onerror="this.style.display='none'">
+            <div class="w-full aspect-[16/9] rounded-xl shadow-lg overflow-hidden mb-8 mx-auto">
+                <img src="/uploads/BUS.jpg" alt="Mini Bus" class="w-full h-full object-cover" loading="lazy" onerror="this.parentElement.style.display='none'">
+            </div>
         {% endif %}
 
         <p class="text-center text-gray-600 font-medium">Max capacity of the bus is 28 persons</p>
