@@ -1238,7 +1238,7 @@ def admin_add_room():
     conn = get_db_connection()
     try:
         conn.execute(
-            "INSERT OR IGNORE INTO RoomPricing (room_type, price_per_night) VALUES (?, 0)",
+            "INSERT INTO RoomPricing (room_type, price_per_night) VALUES (?, 0) ON CONFLICT (room_type) DO NOTHING",
             (room_type,),
         )
 
@@ -1345,7 +1345,7 @@ def admin_edit_room(room_id: int):
 
     conn = get_db_connection()
     conn.execute(
-        "INSERT OR IGNORE INTO RoomPricing (room_type, price_per_night) VALUES (?, 0)",
+        "INSERT INTO RoomPricing (room_type, price_per_night) VALUES (?, 0) ON CONFLICT (room_type) DO NOTHING",
         (room_type,),
     )
     existing = conn.execute(
@@ -3202,3 +3202,4 @@ if __name__ == '__main__':
     init_db()
     init_website_settings()
     app.run(debug=False, host="127.0.0.1", port=5001)
+
