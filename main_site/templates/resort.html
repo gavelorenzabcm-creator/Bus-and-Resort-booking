@@ -73,8 +73,7 @@
                                     {% set p = room_photos[i] if i < (room_photos|length) else '' %}
 {% if p %}
 <img
-                                            src="{% if p.startswith('/') %}{{ p }}{% elif p.startswith('uploads/') %}/{{ p }}{% else %}/uploads/{{ p }}{% endif %}"
-                                            alt="{{ room.name }} photo {{ i+1 }}"
+                                            src="{% if p.startswith('http://') or p.startswith('https://') %}{{ p }}{% elif p.startswith('/') %}{{ p }}{% elif p.startswith('uploads/') %}/{{ p }}{% else %}/uploads/{{ p }}{% endif %}"
                                             class="room-photo-slide absolute inset-0 w-full h-full object-cover {% if i==0 %}block{% else %}hidden{% endif %}"
                                             loading="lazy"
                                             data-slide-index="{{ i }}"
