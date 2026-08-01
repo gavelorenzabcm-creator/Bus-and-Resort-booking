@@ -387,18 +387,13 @@ def init_db():
             )
             """
         )
-
-       # Down payment tracking (added after initial launch — safe to run repeatedly)
-        # Wrapped in try/except: if this ever hangs/times out (e.g. due to a lock
-        # held by another connection), it must NOT be allowed to crash the entire
-        # app at import time. Worst case, down_payment writes/reads fail until the
-        # lock clears and a future cold start retries this successfully.
-        try:
-            conn.execute("ALTER TABLE BusBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0")
-            conn.execute("ALTER TABLE ResortBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0")
-        except Exception as e:
-            logging.getLogger(__name__).error("down_payment column migration failed (non-fatal): %s", e)
-            conn.rollback()
+# NOTE: down_payment column migration removed from the cold-start critical
+# path. It was causing repeated statement timeouts (likely due to a lock
+# held by a stuck connection), which took down the entire app on every
+# cold start. Run this ONCE manually via the Supabase SQL Editor instead:
+#
+#   ALTER TABLE BusBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0;
+#   ALTER TABLE ResortBookings ADD COLUMN IF NOT EXISTS down_payment REAL DEFAULT 0;
 
         conn.commit()
         _db_initialized = True
