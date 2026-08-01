@@ -95,7 +95,7 @@
           <input class="admin-input w-full p-3 rounded-lg" type="file" name="footer_logo" accept="image/jpeg,image/jpg,image/png,image/webp" />
           {% if footer and footer.footer_logo_path %}
             <div class="mt-3">
-              <img src="/uploads/{{ footer.footer_logo_path.split('/')[-1] if footer.footer_logo_path.startswith('uploads/') else footer.footer_logo_path }}" class="h-24 object-contain rounded" alt="Footer Logo" />
+              <img src="{% if footer.footer_logo_path.startswith('http://') or footer.footer_logo_path.startswith('https://') %}{{ footer.footer_logo_path }}{% else %}/uploads/{{ footer.footer_logo_path.split('/')[-1] if footer.footer_logo_path.startswith('uploads/') else footer.footer_logo_path }}{% endif %}" class="h-24 object-contain rounded" alt="Footer Logo" />
             </div>
           {% endif %}
         </div>
