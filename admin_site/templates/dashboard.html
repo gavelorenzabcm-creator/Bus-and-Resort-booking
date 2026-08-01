@@ -31,6 +31,7 @@
     padding: 0.75rem;
     min-width: 0; /* critical to avoid overflow/overlap on narrow screens */
     box-sizing: border-box;
+    overflow:hidden;
 }
 
 .room-photo-card-header {
@@ -96,10 +97,11 @@
 }
 
 .room-photo-action-btn {
-    /* fixed sizing so buttons never overlap */
-    min-width: 120px;
+    /* flex to fit within the card at any screen width, never overflow */
+    flex: 1;
+    min-width: 0;
     height: 38px;
-    padding: 0 12px;
+    padding: 0 8px;
     border-radius: 0.75rem;
     font-size: 0.75rem;
     font-weight: 700;
