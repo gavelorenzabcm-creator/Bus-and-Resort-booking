@@ -1,6 +1,6 @@
 import os
 import tempfile
-from supabase import create_client
+from supabase import create_client, ClientOptions
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -11,7 +11,11 @@ if not SUPABASE_URL or not SUPABASE_KEY:
         "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing from .env"
     )
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY,
+    options=ClientOptions(storage_client_timeout=30),
+)
 import storage3
 print("storage3 version:", getattr(storage3, "__version__", "unknown"))
 
@@ -38,14 +42,25 @@ def upload_file(file_storage, filename):
             with open(temp_path, "wb") as f:
                 f.write(data)
 
-        result = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            path=filename,
-            file=temp_path,
-            file_options={
-                "content-type": content_type,
-                "upsert": "true",
-            },
-        )
+        last_error = None
+        result = None
+        for attempt in range(2):
+            try:
+                result = supabase.storage.from_(SUPABASE_BUCKET).upload(
+                    path=filename,
+                    file=temp_path,
+                    file_options={
+                        "content-type": content_type,
+                        "upsert": "true",
+                    },
+                )
+                last_error = None
+                break
+            except Exception as e:
+                last_error = e
+
+        if last_error is not None:
+            raise last_error
     except Exception as e:
         raise
     finally:
